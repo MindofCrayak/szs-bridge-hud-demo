@@ -1,0 +1,6 @@
+{
+  "name": "Oracle",
+  "description": "An internal research and reporting workspace for deep internet research and Sourcebook Reports, designed to support additional report types over time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,170 @@
+/* ==========================================================================
+   SZS DOCK SKINS — Stitch art layered onto the bottom console chassis.
+   L1 conduit < bay fill < L2 machinery < L3 crystals/FX < L4 frames/fittings
+   Everything here is scoped to .szs-dock[data-dock-race] so the classic
+   chassis is untouched when the skin is set to "classic".
+   ========================================================================== */
+
+.szs-dock { isolation: isolate; }
+
+/* Bays: hand the edge over to the frame art. */
+.szs-dock[data-dock-race] .szs-bay {
+  border-color: transparent !important;
+  border-radius: 6px !important;
+  overflow: visible !important;
+  background-color: rgba(4, 7, 6, 0.94) !important;
+}
+.szs-dock[data-dock-race] .szs-bay > .szs-bay-head { padding-left: 1.15rem; padding-right: 1.15rem; border-bottom-color: transparent; }
+.szs-dock[data-dock-race] .szs-bay > .szs-bay-body { margin: 0 6px 6px; border-radius: 4px; }
+
+.szs-bay-frame {
+  position: absolute;
+  inset: -4px;
+  z-index: 30;
+  pointer-events: none;
+  border-style: solid;
+}
+.szs-bay-ornament {
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  height: 30px;
+  transform: translateX(-50%);
+  z-index: 31;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+}
+
+/* L1: conduit under the whole dock. */
+.szs-conduit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  z-index: -1;
+  pointer-events: none;
+  background-repeat: repeat-x;
+  background-size: auto 12px;
+  opacity: 0.9;
+}
+
+/* Joints between bays. */
+.szs-joint {
+  position: relative;
+  flex: 0 0 auto;
+  align-self: flex-end;
+  isolation: isolate;
+  pointer-events: none;
+}
+/* Buttons must take clicks: plain CSS beats Tailwind's layered `pointer-events-auto`, so say it here (2026-11-05 fix). */
+button.szs-joint { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; pointer-events: auto; }
+button.szs-joint:focus-visible { outline: 2px solid #e0ca3c; outline-offset: 2px; border-radius: 6px; }
+.szs-joint-layer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.szs-l2 { z-index: 1; }
+.szs-l4 { z-index: 3; }
+.szs-cap.is-right .szs-joint-layer { transform: scaleX(-1); }
+.szs-core { margin: 0 -2px; }
+.szs-dock[data-dock-race] .szs-core:hover .szs-crystal img { filter: brightness(1.25) !important; }
+
+.szs-rotor {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  animation: szs-spin 3.2s linear infinite;
+}
+.szs-dock[data-thinking="true"] .szs-rotor { animation-duration: 0.45s; }
+
+.szs-slot-back {
+  position: absolute;
+  z-index: 1;
+  border-radius: 3px;
+  background: radial-gradient(ellipse at 50% 50%, #10262a, #020500 75%);
+}
+
+/* L3: painted crystal. */
+.szs-crystal {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+}
+.szs-crystal img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.szs-crystal-shim {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.55) 48%, rgba(255, 255, 255, 0.1) 54%, transparent 62%) 0 0 / 100% 260% no-repeat;
+  mix-blend-mode: screen;
+  animation: szs-shimmer 5.5s ease-in-out infinite;
+}
+.szs-crystal[data-race="terran"] .szs-crystal-shim { animation-duration: 4.2s; }
+.szs-crystal[data-race="zerg"] .szs-crystal-shim { animation-duration: 7s; opacity: 0.6; }
+.szs-crystal[data-race="cassette"] .szs-crystal-shim { animation-duration: 3.6s; }
+.szs-crystal-glint {
+  position: absolute;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(circle, #fff 0 6%, rgba(255, 255, 255, 0.4) 12%, transparent 30%),
+    linear-gradient(90deg, transparent 46%, #fff 50%, transparent 54%) center / 100% 6% no-repeat,
+    linear-gradient(0deg, transparent 46%, #fff 50%, transparent 54%) center / 6% 100% no-repeat;
+}
+
+.szs-dock-fx {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(100% + 140px);
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* Macro pad keycap art (Cassette ships keycaps). */
+.szs-dock[data-keycaps="true"] .szs-keycap.has-art {
+  background: var(--szs-keycap-idle) center / 100% 100% no-repeat !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.szs-dock[data-keycaps="true"] .szs-keycap.has-art:hover { background-image: var(--szs-keycap-hover) !important; }
+.szs-dock[data-keycaps="true"] .szs-keycap.has-art:active { background-image: var(--szs-keycap-lit) !important; box-shadow: 0 0 14px rgba(255, 170, 60, 0.55) !important; }
+
+/* Client vitals meters (Alfred > Client audit & gate vitals). */
+.szs-vitals { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.szs-vital { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.szs-vital-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.szs-vital-label { font-size: var(--text-hud-2, 11.5px); letter-spacing: 0.12em; text-transform: uppercase; color: rgba(221, 251, 208, 0.65); }
+.szs-vital-value { font-size: var(--text-hud-3, 12px); color: #ddfbd0; }
+.szs-vital-value.is-hot { color: #fe5f00; }
+.szs-meter { position: relative; height: 24px; border-radius: 3px; overflow: hidden; background: #060a09; box-shadow: inset 0 0 0 1px #1e2c27; }
+.szs-meter.has-art { background: none; box-shadow: none; border-radius: 0; overflow: visible; }
+.szs-meter-row { position: absolute; inset: 0; display: flex; }
+.szs-meter-row img, .szs-meter-row i { display: block; height: 100%; flex: 0 0 auto; }
+.szs-meter-row i { flex: 1 1 0; background-size: 100% 100%; }
+.szs-meter-row.is-fill { transition: clip-path 0.6s ease; }
+.szs-meter-row.is-alert { animation: szs-flick 3.2s steps(1) infinite; }
+.szs-meter-fill { position: absolute; left: 2px; top: 2px; bottom: 2px; border-radius: 2px; transition: width 0.6s ease; }
+.szs-vital[data-state="ok"] .szs-meter-fill { background: linear-gradient(90deg, #0d6b4a, #3fd6cf); box-shadow: 0 0 10px rgba(63, 214, 207, 0.5); }
+.szs-vital[data-state="warn"] .szs-meter-fill { background: linear-gradient(90deg, #7a5a10, #e0ca3c); box-shadow: 0 0 10px rgba(224, 202, 60, 0.5); }
+.szs-vital[data-state="alert"] .szs-meter-fill { background: linear-gradient(90deg, #7a1d00, #fe5f00); box-shadow: 0 0 10px rgba(254, 95, 0, 0.55); animation: szs-flick 3.2s steps(1) infinite; }
+
+@keyframes szs-spin { to { transform: rotate(360deg); } }
+@keyframes szs-shimmer { 0% { background-position: 0 120%; } 55%, 100% { background-position: 0 -40%; } }
+@keyframes szs-flick { 0%, 100% { opacity: 1; } 47% { opacity: 0.35; } 49% { opacity: 1; } 51% { opacity: 0.5; } 53% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .szs-rotor, .szs-crystal-shim, .szs-meter-row.is-alert, .szs-meter-fill { animation: none !important; }
+}

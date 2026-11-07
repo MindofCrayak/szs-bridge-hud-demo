@@ -1,0 +1,17 @@
+{
+  "name": "szs-bridge-hud-demo",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/command-hud"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @szs/command-hud",
+    "dev:local": "npm run dev:local --workspace @szs/command-hud",
+    "build": "npm run build --workspace @szs/command-hud",
+    "lint": "npm run lint --workspace @szs/command-hud",
+    "test": "npm run test --workspace @szs/command-hud",
+    "data:import": "npm run data:import --workspace @szs/command-hud",
+    "clean": "npm run clean --workspace @szs/command-hud"
+  }
+}

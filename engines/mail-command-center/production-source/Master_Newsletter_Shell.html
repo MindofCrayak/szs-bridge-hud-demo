@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f7; margin: 0; padding: 20px; color: #333333; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header { padding: 24px; text-align: center; background-color: #111827; color: #ffffff; }
+    .header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+    .body-content { padding: 32px 24px; line-height: 1.6; font-size: 16px; color: #374151; }
+    .footer { padding: 24px; text-align: center; font-size: 12px; color: #9ca3af; background-color: #f9fafb; border-top: 1px solid #e5e7eb; }
+    .footer a { color: #6b7280; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>{{newsletter_name}}</h1>
+    </div>
+    <div class="body-content">
+      {{body}}
+    </div>
+    <div class="footer">
+      <p>Sent to {{email}} by {{newsletter_name}}</p>
+      <p><a href="{{view_in_browser}}">View in browser</a> &bull; <a href="{{unsubscribe_url}}">Manage subscriptions / Unsubscribe</a></p>
+    </div>
+  </div>
+</body>
+</html>

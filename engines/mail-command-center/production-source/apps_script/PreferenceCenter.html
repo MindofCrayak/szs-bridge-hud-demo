@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Email Preferences</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              900: '#78350f',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans antialiased">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="flex justify-center mb-4">
+      <div class="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-bold text-xl shadow-md">
+        📬
+      </div>
+    </div>
+    <h2 class="text-center text-2xl font-bold tracking-tight text-slate-900">
+      Email Preference Center
+    </h2>
+    <p class="mt-2 text-center text-sm text-slate-600">
+      Manage which newsletters you receive from our publication network.
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+    <div class="bg-white py-8 px-6 shadow-xl rounded-2xl sm:px-10 border border-slate-200/80">
+      <!-- Loading Skeleton -->
+      <div id="loadingState" class="space-y-4 py-6">
+        <div class="animate-pulse flex space-x-4">
+          <div class="rounded-full bg-slate-200 h-10 w-10"></div>
+          <div class="flex-1 space-y-3 py-1">
+            <div class="h-3 bg-slate-200 rounded"></div>
+            <div class="h-3 bg-slate-200 rounded w-5/6"></div>
+          </div>
+        </div>
+        <p class="text-center text-xs text-slate-400">Loading your subscription preferences...</p>
+      </div>
+
+      <!-- Main Form -->
+      <div id="formState" class="hidden space-y-6">
+        <!-- Recipient Header -->
+        <div class="bg-amber-50/70 border border-amber-200/60 rounded-xl p-4">
+          <span class="text-xs font-semibold text-amber-800 uppercase tracking-wider block">Subscriber Email</span>
+          <span id="subscriberEmailDisplay" class="font-mono text-sm font-bold text-slate-900 break-all block mt-0.5">
+            loading...
+          </span>
+        </div>
+
+        <!-- Newsletters Checkbox List -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            Active Publications
+          </label>
+          <div id="newslettersContainer" class="space-y-3">
+            <!-- Injected via JavaScript -->
+          </div>
+        </div>
+
+        <!-- Notification Banner -->
+        <div id="statusBanner" class="hidden rounded-lg p-3 text-xs font-medium"></div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2.5 pt-2">
+          <button
+            type="button"
+            id="saveBtn"
+            onclick="handleSavePreferences()"
+            class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition"
+          >
+            Save Preferences
+          </button>
+
+          <button
+            type="button"
+            id="unsubAllBtn"
+            onclick="handleUnsubscribeAll()"
+            class="w-full flex justify-center py-2 px-4 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 focus:outline-none transition"
+          >
+            Unsubscribe from All Newsletters
+          </button>
+        </div>
+      </div>
+
+      <!-- Success State -->
+      <div id="successState" class="hidden py-8 text-center space-y-3">
+        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl">
+          ✓
+        </div>
+        <h3 class="text-lg font-bold text-slate-900">Preferences Updated!</h3>
+        <p class="text-xs text-slate-500">Your email subscription choices have been recorded instantly.</p>
+        <button
+          onclick="location.reload()"
+          class="mt-3 text-xs text-amber-600 hover:text-amber-700 font-semibold"
+        >
+          Review or modify again &rarr;
+        </button>
+      </div>
+    </div>
+
+    <!-- Security & One-Click notice -->
+    <div class="mt-6 text-center text-xs text-slate-400">
+      <p>Protected by LockService atomic concurrency • RFC 8058 compliant</p>
+    </div>
+  </div>
+
+  <script>
+    var currentEmail = '';
+    var allNewsletters = [];
+
+    function getParam(param) {
+      var urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param) || '';
+    }
+
+    function init() {
+      currentEmail = getParam('email') || getParam('s_id') || '';
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(data) {
+            renderPreferences(data);
+          })
+          .withFailureHandler(function(err) {
+            showError('Failed to load preferences: ' + err.message);
+          })
+          .rpcGetPreferenceData(currentEmail);
+      } else {
+        // Fallback for direct standalone browser preview
+        setTimeout(function() {
+          renderPreferences({
+            email: currentEmail || 'reader@sessionzero.solutions',
+            subscribedNewsletters: ['news_tech_weekly', 'news_product_updates'],
+            allNewsletters: [
+              { newsletter_id: 'news_tech_weekly', name: 'Tech & Architecture Weekly', sender_alias: 'digest@acme.com' },
+              { newsletter_id: 'news_product_updates', name: 'Monthly Product Release Notes', sender_alias: 'product@acme.com' },
+              { newsletter_id: 'news_security_alerts', name: 'Security & Critical Advisories', sender_alias: 'security@acme.com' }
+            ]
+          });
+        }, 300);
+      }
+    }
+
+    function renderPreferences(data) {
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('formState').classList.remove('hidden');
+
+      currentEmail = data.email || currentEmail;
+      document.getElementById('subscriberEmailDisplay').textContent = currentEmail;
+
+      allNewsletters = data.allNewsletters || [];
+      var subscribedSet = {};
+      (data.subscribedNewsletters || []).forEach(function(id) {
+        subscribedSet[id.trim()] = true;
+      });
+
+      var container = document.getElementById('newslettersContainer');
+      container.innerHTML = '';
+
+      if (allNewsletters.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400">No newsletters available.</p>';
+        return;
+      }
+
+      allNewsletters.forEach(function(nl) {
+        var isChecked = Boolean(subscribedSet[nl.newsletter_id]);
+        var div = document.createElement('label');
+        div.className = 'flex items-start p-3 rounded-xl border border-slate-200 hover:bg-slate-50/80 cursor-pointer transition';
+        div.innerHTML = 
+          '<input type="checkbox" name="newsletter_choice" value="' + nl.newsletter_id + '" ' +
+          (isChecked ? 'checked ' : '') +
+          'class="h-4 w-4 mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500">' +
+          '<div class="ml-3 text-xs">' +
+            '<span class="font-bold text-slate-900 block">' + nl.name + '</span>' +
+            '<span class="text-slate-500 block text-[11px]">' + (nl.sender_alias || 'Editorial Team') + '</span>' +
+          '</div>';
+        container.appendChild(div);
+      });
+    }
+
+    function handleSavePreferences() {
+      var checkboxes = document.querySelectorAll('input[name="newsletter_choice"]:checked');
+      var selected = [];
+      checkboxes.forEach(function(cb) {
+        selected.push(cb.value);
+      });
+
+      setButtonState(true);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function() {
+            showSuccess('Preferences saved successfully.');
+          })
+          .withFailureHandler(function(err) {
+            setButtonState(false);
+            showError(err.message);
+          })
+          .rpcSavePreferences(currentEmail, selected);
+      } else {
+        setTimeout(function() {
+          showSuccess('Preferences saved (standalone preview mode).');
+        }, 500);
+      }
+    }
+
+    function handleUnsubscribeAll() {
+      if (!confirm('Are you sure you want to unsubscribe from all publications?')) {
+        return;
+      }
+
+      setButtonState(true);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function() {
+            showSuccess('You have been unsubscribed from all newsletters.');
+          })
+          .withFailureHandler(function(err) {
+            setButtonState(false);
+            showError(err.message);
+          })
+          .rpcUnsubscribeAll(currentEmail);
+      } else {
+        setTimeout(function() {
+          showSuccess('Unsubscribed from all (standalone preview mode).');
+        }, 500);
+      }
+    }
+
+    function setButtonState(saving) {
+      var saveBtn = document.getElementById('saveBtn');
+      var unsubBtn = document.getElementById('unsubAllBtn');
+      saveBtn.disabled = saving;
+      unsubBtn.disabled = saving;
+      saveBtn.textContent = saving ? 'Saving...' : 'Save Preferences';
+    }
+
+    function showSuccess(msg) {
+      document.getElementById('formState').classList.add('hidden');
+      document.getElementById('successState').classList.remove('hidden');
+    }
+
+    function showError(msg) {
+      var banner = document.getElementById('statusBanner');
+      banner.className = 'rounded-lg p-3 text-xs font-medium bg-red-50 text-red-700 border border-red-200 block';
+      banner.textContent = msg;
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>

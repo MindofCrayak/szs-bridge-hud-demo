@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SZS Protoss Master Command Bridge - Unified Tactical Canvas</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&amp;family=Rajdhani:wght@500;600;700&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet"/>
+<!-- FontAwesome Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
+<style>
+    :root {
+      --void-space: #01060b;
+      --chassis-dark: #020b14;
+      --chassis-deep: #031422;
+      --chassis-mid: #052338;
+      --chassis-rim: #10496f;
+      --chassis-bright: #1c7ba8;
+      --gold-deep: #2e1e02;
+      --gold-dark: #634305;
+      --gold-mid: #b8861b;
+      --gold-bright: #f5c441;
+      --gold-sheen: #fff8d6;
+      --gold-glow: rgba(245, 196, 65, 0.65);
+      --silver-rim: #a4c8de;
+      --psi-cyan: #00f0ff;
+      --psi-glow: rgba(0, 240, 255, 0.65);
+      --psi-dim: #09728e;
+      --plasma-green: #2aff78;
+      --plasma-green-glow: rgba(42, 255, 120, 0.7);
+      --shield-blue: #00c3ff;
+      --vitality-green: #23e874;
+      --font-rts-head: 'Orbitron', sans-serif;
+      --font-rts-sub: 'Rajdhani', sans-serif;
+      --font-mono: 'Share Tech Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    body {
+      background-color: var(--void-space);
+      color: #c9efff;
+      font-family: var(--font-rts-sub);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Ambient CRT Scanline & Cosmic Dust */
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, rgba(0, 240, 255, 0.015) 0px, rgba(0, 240, 255, 0.015) 1px, transparent 2px, transparent 4px),
+                  radial-gradient(ellipse at 50% 20%, rgba(0, 190, 255, 0.06) 0%, transparent 70%);
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    /* SECTION 1: TACTICAL ORBITAL GRID & DOCKING MATRIX */
+    .viewport-battlefield {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      background: 
+        radial-gradient(circle at 75% 25%, rgba(12, 58, 92, 0.45) 0%, transparent 60%),
+        radial-gradient(circle at 20% 65%, rgba(0, 180, 255, 0.14) 0%, transparent 65%),
+        linear-gradient(180deg, #01050a 0%, #02111d 55%, #04192b 100%);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.5s ease;
+    }
+
+    /* Canvas View Mode Variants */
+    .viewport-battlefield.mode-tactical {
+      background: 
+        radial-gradient(circle at 50% 50%, rgba(0, 140, 255, 0.22) 0%, transparent 70%),
+        linear-gradient(180deg, #010811 0%, #031728 50%, #020c16 100%);
+    }
+    .viewport-battlefield.mode-tactical .tactical-grid-overlay {
+      background-size: 30px 30px;
+      opacity: 0.9;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.08) 1px, transparent 1px);
+    }
+
+    .viewport-battlefield.mode-warroom {
+      background: 
+        radial-gradient(ellipse at 60% 40%, rgba(85, 30, 120, 0.28) 0%, transparent 60%),
+        radial-gradient(circle at 30% 70%, rgba(10, 40, 90, 0.35) 0%, transparent 65%),
+        linear-gradient(180deg, #030409 0%, #090817 60%, #030813 100%);
+    }
+
+    /* Starfield Background */
+    .star-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        radial-gradient(1px 1px at 25px 35px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 150px 95px, var(--psi-cyan), rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 320px 180px, #fff3a8, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 580px 70px, rgba(0, 240, 255, 0.8), rgba(0,0,0,0)),
+        radial-gradient(1.2px 1.2px at 840px 140px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.8px 1.8px at 1020px 220px, #ffd86b, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 1280px 80px, #4ca8ff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 1440px 190px, #ffffff, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 650px 320px;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .tactical-grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      transition: all 0.4s ease;
+    }
+
+    /* Top Skyway Info Bar - Clean, Streamlined Bridge Header */
+    .sky-header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 22px;
+      background: linear-gradient(180deg, rgba(2, 12, 22, 0.95) 0%, rgba(2, 12, 22, 0.6) 85%, transparent 100%);
+      border-bottom: 1px solid rgba(19, 78, 115, 0.4);
+    }
+
+    .bridge-id { display: flex; align-items: center; gap: 12px; }
+    .bridge-logo-gem {
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--gold-bright) 45%, var(--gold-dark) 100%);
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+      box-shadow: 0 0 10px var(--gold-bright);
+    }
+    .bridge-title {
+      font-family: var(--font-rts-head);
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #ffffff;
+      text-shadow: 0 0 10px var(--psi-cyan);
+    }
+    .bridge-sub {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--gold-bright);
+      letter-spacing: 1.5px;
+    }
+    .sky-telemetry {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+    .sky-pill {
+      background: rgba(3, 22, 36, 0.85);
+      border: 1px solid #14597b;
+      padding: 3px 10px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #92d4f5;
+    }
+    .sky-pill i { color: var(--gold-bright); }
+
+    /* Sandbox Interactive Workspace */
+    .tactical-sandbox-workspace {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    /* FLEET STAGING TRAY (Collapsible left sidebar with dedicated chevron handle) */
+    .fleet-staging-tray {
+      position: absolute;
+      left: 0;
+      top: 30px;
+      bottom: 24px;
+      width: 210px;
+      background: linear-gradient(135deg, rgba(2, 16, 28, 0.96) 0%, rgba(1, 9, 17, 0.97) 100%);
+      border: 1.5px solid #1c72a2;
+      border-left: none;
+      border-radius: 0 16px 16px 0;
+      z-index: 28;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.85), inset 0 0 15px rgba(0, 240, 255, 0.15);
+      backdrop-filter: blur(8px);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fleet-staging-tray.collapsed {
+      transform: translateX(-200px);
+    }
+
+    .tray-toggle-tab {
+      position: absolute;
+      right: -28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 64px;
+      background: linear-gradient(90deg, #093755, #14597b);
+      border: 1.5px solid #2ea9e0;
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--gold-bright);
+      box-shadow: 4px 0 12px rgba(0, 240, 255, 0.35);
+      transition: background 0.2s ease;
+    }
+    .tray-toggle-tab:hover { background: #1c72a2; color: #fff; }
+    .tray-toggle-tab i { transition: transform 0.3s ease; font-size: 0.85rem; }
+    .fleet-staging-tray.collapsed .tray-toggle-tab i { transform: rotate(180deg); }
+
+    .tray-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(28, 114, 162, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 240, 255, 0.05);
+    }
+    .tray-header-title {
+      font-family: var(--font-rts-head);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--gold-bright);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tray-units-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .tray-unit-card {
+      background: linear-gradient(135deg, rgba(4, 25, 41, 0.85) 0%, rgba(2, 13, 23, 0.95) 100%);
+      border: 1px solid #16567a;
+      border-radius: 8px;
+      padding: 6px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .tray-unit-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 3px;
+      background: var(--psi-cyan);
+    }
+    .tray-unit-card:hover {
+      border-color: var(--gold-bright);
+      transform: translateX(3px);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+      background: linear-gradient(135deg, rgba(8, 42, 68, 0.9) 0%, rgba(3, 20, 34, 0.98) 100%);
+    }
+    .tray-unit-icon {
+      font-size: 1.3rem;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #010a12;
+      border: 1px solid #1a6591;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .tray-unit-info { flex: 1; min-width: 0; }
+    .tray-unit-name {
+      font-family: var(--font-rts-head);
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tray-unit-role {
+      font-size: 0.6rem;
+      color: #79bfdf;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tray-deploy-btn {
+      font-size: 0.65rem;
+      background: #0c4366;
+      color: var(--gold-bright);
+      border: 1px solid #207aa8;
+      border-radius: 4px;
+      padding: 3px 6px;
+      cursor: pointer;
+    }
+    .tray-deploy-btn:hover { background: var(--gold-bright); color: #000; }
+
+    /* Dynamic SVG Tether Lines */
+    .psionic-tethers-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Designated Tactical Docking Zones */
+    .docking-zones-container {
+      position: absolute;
+      inset: 10px 14px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      pointer-events: none;
+      z-index: 1;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .docking-zones-container.sectors-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.98);
+    }
+    .dock-zone {
+      position: relative;
+      border: 1.5px dashed rgba(26, 101, 145, 0.45);
+      border-radius: 8px;
+      background: radial-gradient(circle at 50% 20%, rgba(2, 28, 48, 0.25) 0%, rgba(1, 14, 24, 0.05) 100%);
+      padding: 8px 10px;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .dock-zone.drag-hover {
+      border-color: var(--psi-cyan);
+      background: radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.12) 0%, rgba(2, 24, 42, 0.5) 100%);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.3), inset 0 0 12px rgba(0, 240, 255, 0.15);
+      transform: scale(1.008);
+    }
+    .dock-zone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-rts-head);
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      color: #60aed4;
+      border-bottom: 1px solid rgba(22, 86, 122, 0.35);
+      padding-bottom: 4px;
+    }
+    .dock-zone.zone-roadblock { border-color: rgba(255, 95, 95, 0.35); }
+    .dock-zone.zone-roadblock .dock-zone-header { color: #ff9b9b; border-bottom-color: rgba(255, 95, 95, 0.3); }
+    .dock-zone.zone-roadblock.drag-hover { border-color: #ff5252; box-shadow: 0 0 16px rgba(255, 82, 82, 0.35); }
+    .dock-badge {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(3, 23, 38, 0.7);
+      border: 1px solid #16567a;
+      color: var(--gold-bright);
+    }
+
+    /* Live Coordinates Live Telemetry Beacon (Clean Top Right HUD) */
+    .tactical-live-coords-hud {
+      position: absolute;
+      top: 10px;
+      right: 18px;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(1, 14, 25, 0.92);
+      border: 1.5px solid #1a6591;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--psi-cyan);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+    }
+    .coords-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--plasma-green);
+      box-shadow: 0 0 8px var(--plasma-green);
+      animation: pulseGlow 1.4s infinite;
+    }
+
+    /* Draggable Unit Node / Waypoint Token */
+    .draggable-unit-node {
+      position: absolute;
+      width: 200px;
+      background: linear-gradient(135deg, rgba(3, 27, 44, 0.92) 0%, rgba(1, 15, 26, 0.96) 100%);
+      border: 1px solid #16567a;
+      border-left: 3px solid #16567a;
+      border-radius: 6px;
+      padding: 6px 8px;
+      cursor: grab;
+      z-index: 10;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+      touch-action: none;
+    }
+    .draggable-unit-node:active, .draggable-unit-node.dragging {
+      cursor: grabbing;
+      z-index: 99 !important;
+      border-color: var(--psi-cyan);
+      border-left-color: var(--psi-cyan);
+      box-shadow: 0 0 22px rgba(0, 240, 255, 0.65), 0 8px 24px rgba(0,0,0,0.85);
+      transform: scale(1.03);
+    }
+    .draggable-unit-node.active-unit {
+      border-color: var(--gold-bright);
+      border-left-color: var(--gold-bright);
+      box-shadow: 0 0 16px rgba(243, 195, 67, 0.55), inset 0 0 10px rgba(243, 195, 67, 0.2);
+      background: linear-gradient(135deg, rgba(38, 28, 6, 0.95) 0%, rgba(3, 25, 41, 0.98) 100%);
+    }
+    .draggable-unit-node.active-unit::after {
+      content: 'SELECTION LOCK';
+      position: absolute;
+      top: -8px;
+      right: 6px;
+      background: var(--gold-bright);
+      color: #020c15;
+      font-family: var(--font-rts-head);
+      font-size: 0.55rem;
+      font-weight: 900;
+      padding: 1px 4px;
+      border-radius: 2px;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+    }
+    .draggable-unit-node.multi-selected {
+      border-color: var(--psi-cyan);
+      border-left-color: var(--psi-cyan);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.6), inset 0 0 8px rgba(0, 240, 255, 0.2);
+    }
+    .draggable-unit-node.multi-selected::after {
+      content: 'GROUP LOCK';
+      position: absolute;
+      top: -8px;
+      right: 6px;
+      background: var(--psi-cyan);
+      color: #010a12;
+      font-family: var(--font-rts-head);
+      font-size: 0.55rem;
+      font-weight: 900;
+      padding: 1px 4px;
+      border-radius: 2px;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+    }
+
+    .node-header { display: flex; align-items: center; gap: 6px; }
+    .node-icon-box {
+      width: 28px;
+      height: 28px;
+      background: #010c14;
+      border: 1px solid #16567a;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      box-shadow: inset 0 0 6px rgba(0, 240, 255, 0.3);
+      flex-shrink: 0;
+    }
+    .draggable-unit-node.active-unit .node-icon-box {
+      border-color: var(--gold-bright);
+      box-shadow: inset 0 0 6px var(--gold-glow);
+    }
+    .node-details { flex: 1; overflow: hidden; }
+    .node-name {
+      font-family: var(--font-rts-head);
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .node-role {
+      font-size: 0.65rem;
+      color: #78b8db;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .node-bars { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+    .bar-line { height: 3px; background: #010910; border-radius: 1px; overflow: hidden; }
+    .bar-line-fill.shield { width: 100%; height: 100%; background: var(--shield-blue); }
+    .bar-line-fill.health { width: 100%; height: 100%; background: var(--vitality-green); }
+    .node-foot {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--gold-sheen);
+    }
+    .node-coords-tag {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      color: var(--psi-cyan);
+      background: rgba(0, 15, 26, 0.8);
+      padding: 0 4px;
+      border-radius: 2px;
+      border: 1px solid rgba(22, 86, 122, 0.5);
+    }
+
+    /* Floating Center Reticle */
+    .tactical-canvas-center {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(1, 14, 24, 0.88);
+      border: 1px solid #144e6f;
+      padding: 3px 16px;
+      border-radius: 20px;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.25);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .reticle-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-rts-head);
+      font-size: 0.68rem;
+      letter-spacing: 1px;
+      color: var(--psi-cyan);
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--plasma-green);
+      box-shadow: 0 0 8px var(--plasma-green);
+      animation: pulseGlow 1.5s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    /* SECTION 2: AUTHENTIC CURVED PROTOSS BOTTOM HUD */
+    .protoss-console-container {
+      height: 38vh;
+      min-height: 285px;
+      width: 100vw;
+      position: relative;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      margin-top: auto;
+      background: linear-gradient(180deg, rgba(2, 11, 20, 0.97) 0%, #01070e 100%);
+      filter: drop-shadow(0 -8px 24px rgba(0, 0, 0, 0.85));
+    }
+
+    /* Sculpted Carapace Canopy SVG Layer */
+    .protoss-canopy-svg-layer {
+      position: absolute;
+      top: -38px;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      pointer-events: none;
+      z-index: 25;
+      overflow: visible;
+    }
+
+    /* Top Micro Pipeline Strip */
+    .console-sub-bar {
+      height: 32px;
+      background: linear-gradient(180deg, #0d3856 0%, #051b2c 50%, #02111d 100%);
+      border-top: 1.5px solid #2ea9e0;
+      border-bottom: 2px solid #000c16;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: relative;
+      z-index: 20;
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.25), 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    /* 12-Unit Selection Pips Strip / RTS Control Groups */
+    .selection-queue-strip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(1, 10, 18, 0.9);
+      padding: 3px 8px;
+      border: 1px solid #185e82;
+      border-radius: 12px;
+      box-shadow: inset 0 0 6px #000;
+    }
+    .queue-pip {
+      width: 20px;
+      height: 18px;
+      background: #041b2b;
+      border: 1px solid #1b6894;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: #79bfdf;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.15);
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .queue-pip:hover {
+      border-color: var(--psi-cyan);
+      box-shadow: 0 0 6px var(--psi-cyan);
+      color: #fff;
+    }
+    .queue-pip.has-binding {
+      border-color: var(--gold-bright);
+      color: var(--gold-bright);
+      box-shadow: 0 0 6px var(--gold-glow);
+    }
+    .queue-pip.active-group {
+      border-color: var(--plasma-green);
+      background: radial-gradient(circle, #296639 0%, #092615 100%);
+      color: var(--plasma-green);
+      box-shadow: 0 0 8px var(--plasma-green-glow);
+    }
+
+    /* Central Golden Nodule */
+    .curved-center-gemstone {
+      position: absolute;
+      left: 50%;
+      top: -12px;
+      transform: translateX(-50%);
+      width: 130px;
+      height: 18px;
+      background: radial-gradient(ellipse at 50% 25%, #ffffff 0%, var(--gold-sheen) 25%, var(--gold-bright) 65%, var(--gold-deep) 100%);
+      border-radius: 14px;
+      border: 1.5px solid var(--gold-sheen);
+      box-shadow: 0 -2px 14px var(--gold-bright), inset 0 1px 3px #fff, 0 4px 8px rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+    .curved-center-gemstone::after {
+      content: '';
+      width: 44px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 4px;
+      filter: drop-shadow(0 0 4px #fff);
+    }
+
+    /* Top Resources Bar */
+    .top-rim-resources {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-rts-head);
+    }
+    .resource-pod {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(2, 16, 26, 0.92);
+      border: 1px solid #1b6894;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+    .resource-pod.minerals i { color: var(--psi-cyan); text-shadow: 0 0 6px var(--psi-cyan); }
+    .resource-pod.gas i { color: var(--plasma-green); text-shadow: 0 0 6px var(--plasma-green); }
+    .resource-pod.psi i { color: var(--gold-bright); text-shadow: 0 0 6px var(--gold-bright); }
+    .res-num { color: #ffffff; font-weight: 700; letter-spacing: 0.5px; }
+
+    .menu-button-pod {
+      background: linear-gradient(180deg, #74540d 0%, #3e2b04 100%);
+      border: 1.5px solid var(--gold-bright);
+      color: var(--gold-sheen);
+      font-family: var(--font-rts-head);
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 3px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(245, 196, 65, 0.4), inset 0 1px 2px #fff;
+      transition: all 0.15s ease;
+    }
+    .menu-button-pod:hover {
+      background: linear-gradient(180deg, #9b7012 0%, #4e3605 100%);
+      box-shadow: 0 0 14px var(--gold-bright);
+    }
+
+    /* MAIN CHASSIS: 3-ZONE CURVED RTS ARCHITECTURE */
+    .console-main-interior {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 240px 1fr 410px;
+      gap: 12px;
+      padding: 8px 16px 6px 16px;
+      min-height: 0;
+      position: relative;
+      background: 
+        radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.08) 0%, transparent 65%),
+        radial-gradient(ellipse at 15% 100%, rgba(0, 160, 255, 0.08) 0%, transparent 50%),
+        linear-gradient(180deg, #051d2f 0%, #02111d 50%, #01080f 100%);
+    }
+
+    .chassis-bay {
+      background: linear-gradient(160deg, #06243a 0%, #031422 65%, #010a12 100%);
+      border: 2px solid #1a6591;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 
+        inset 0 2px 4px rgba(255, 255, 255, 0.2),
+        inset 0 -4px 12px rgba(0, 0, 0, 0.95),
+        0 4px 14px rgba(0, 0, 0, 0.7);
+    }
+    .chassis-bay::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright) 30%, var(--gold-sheen) 50%, var(--gold-bright) 70%, transparent);
+      opacity: 0.85;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .chassis-bay::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: var(--psi-cyan);
+      box-shadow: 0 0 10px var(--psi-cyan);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* ZONE 1: MINIMAP & REORGANIZED TACTICAL CONTROLS */
+    .minimap-bay {
+      border-radius: 28px 20px 20px 24px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: linear-gradient(175deg, #072a44 0%, #031422 60%, #010a12 100%);
+      border: 2px solid #1c73a4;
+      border-top-color: var(--gold-bright);
+    }
+    .minimap-top-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--psi-cyan);
+      padding: 0 6px;
+    }
+    .minimap-screen {
+      flex: 1;
+      background: radial-gradient(circle at 50% 50%, #021626 0%, #010a12 85%);
+      border: 1.5px solid #1b6894;
+      border-radius: 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 16px rgba(0, 240, 255, 0.2);
+    }
+    .radar-sweep {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 150%;
+      height: 150%;
+      transform-origin: 0% 0%;
+      background: conic-gradient(from 0deg, rgba(0, 240, 255, 0.35) 0deg, transparent 45deg, transparent 360deg);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: radarRotate 4s linear infinite;
+    }
+    @keyframes radarRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .minimap-contour {
+      position: absolute;
+      inset: 4px;
+      border-radius: 14px;
+      background: 
+        radial-gradient(circle at 35% 35%, rgba(0, 160, 255, 0.22) 0%, transparent 45%),
+        radial-gradient(circle at 75% 75%, rgba(0, 240, 255, 0.16) 0%, transparent 45%);
+      border: 1px dashed rgba(20, 89, 125, 0.35);
+    }
+    .camera-frustum {
+      position: absolute;
+      top: 25%;
+      left: 30%;
+      width: 48px;
+      height: 34px;
+      border: 1.5px solid #ffffff;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.9), inset 0 0 6px rgba(0, 240, 255, 0.4);
+      cursor: move;
+      z-index: 5;
+    }
+    .radar-blip {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--plasma-green);
+      box-shadow: 0 0 8px var(--plasma-green);
+      transition: all 0.2s ease;
+      z-index: 4;
+    }
+
+    /* REPURPOSED MINIMAP CONTROLS: TACTICAL ACTION CYBER-BUTTONS */
+    .minimap-bottom-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+    .mini-tool-btn {
+      background: linear-gradient(180deg, #093755 0%, #031c2e 100%);
+      border: 1px solid #1c72a2;
+      color: #93d7fb;
+      font-size: 0.60rem;
+      padding: 5px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-family: var(--font-rts-head);
+      font-weight: 700;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.15);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .mini-tool-btn:hover {
+      background: #14597b;
+      color: #fff;
+      border-color: var(--psi-cyan);
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+    }
+    .mini-tool-btn.mode-active, .mini-tool-btn.active-toggle {
+      background: linear-gradient(180deg, #135d35 0%, #062b16 100%);
+      border-color: var(--plasma-green);
+      color: #ffffff;
+      box-shadow: 0 0 10px var(--plasma-green-glow), inset 0 1px 2px #fff;
+    }
+    .mini-tool-btn.danger-action:hover {
+      border-color: #ff5252;
+      box-shadow: 0 0 8px rgba(255, 82, 82, 0.45);
+      color: #ffa1a1;
+    }
+
+    /* ZONE 2: ULTRA-FLAT CENTER UNIT STATUS DOSSIER */
+    .dossier-bay {
+      border-radius: 20px;
+      padding: 8px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      background: 
+        radial-gradient(ellipse at 50% 0%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #062338 0%, #021321 65%, #010a12 100%);
+    }
+    .dossier-top-block { display: flex; align-items: center; gap: 14px; }
+    .wireframe-console-box {
+      width: 78px;
+      height: 78px;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, #010a13 85%);
+      border: 1.5px solid #207aa8;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: inset 0 0 14px rgba(42, 255, 120, 0.4), 0 0 12px rgba(0, 240, 255, 0.25);
+      flex-shrink: 0;
+    }
+    .wireframe-console-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(42, 255, 120, 0.15) 2px, rgba(42, 255, 120, 0.15) 3px);
+      pointer-events: none;
+    }
+    .wireframe-icon {
+      font-size: 2.1rem;
+      filter: drop-shadow(0 0 8px var(--plasma-green));
+      color: var(--plasma-green);
+    }
+    .wireframe-values {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      line-height: 1.1;
+      text-align: center;
+      margin-top: 1px;
+      font-weight: 600;
+    }
+    .val-shield { color: var(--shield-blue); }
+    .val-health { color: var(--vitality-green); }
+
+    .dossier-info-col { flex: 1; overflow: hidden; }
+    .unit-name-title {
+      font-family: var(--font-rts-head);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 10px var(--psi-cyan);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .unit-rank-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--gold-bright);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: rgba(3, 20, 32, 0.85);
+      padding: 1px 8px;
+      border-radius: 8px;
+      border: 1px solid #16567a;
+    }
+    .unit-coords-badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--psi-cyan);
+      background: rgba(1, 14, 25, 0.85);
+      padding: 1px 6px;
+      border-radius: 6px;
+      border: 1px solid #185e82;
+    }
+    .unit-role-sub {
+      font-family: var(--font-rts-sub);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #79bfdf;
+    }
+    .weapon-armor-upgrade-matrix {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .upgrade-slot-box {
+      width: 42px;
+      height: 24px;
+      background: #021321;
+      border: 1px solid #1b6894;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: #aae0fa;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+    }
+    .upgrade-slot-box i { color: var(--gold-bright); font-size: 0.72rem; }
+
+    .dossier-lower-metrics {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 8px;
+      background: rgba(1, 14, 24, 0.75);
+      border: 1px solid #155177;
+      padding: 5px 12px;
+      border-radius: 14px;
+    }
+    .metric-item { display: flex; flex-direction: column; gap: 1px; }
+    .metric-lbl {
+      font-family: var(--font-rts-head);
+      font-size: 0.62rem;
+      letter-spacing: 1px;
+      color: #5bc6eb;
+      text-transform: uppercase;
+    }
+    .metric-val {
+      font-family: var(--font-rts-sub);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .metric-val.alert { color: #ff8585; }
+
+    .compact-terminal-log {
+      height: 38px;
+      background: #010912;
+      border: 1px solid #154c6d;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      line-height: 1.35;
+      color: #7cc3e5;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.95);
+    }
+    .term-line { display: flex; gap: 6px; }
+    .term-time { color: #378baa; }
+    .term-act { color: var(--gold-bright); }
+    .term-srv { color: var(--psi-cyan); }
+
+    /* ZONE 3: RIGHT SECTION (PORTRAIT + 3x3 COMMAND MATRIX POD) */
+    .command-and-portrait-zone {
+      display: grid;
+      grid-template-columns: 115px 1fr;
+      gap: 8px;
+      min-width: 0;
+    }
+    .portrait-sub-bay {
+      background: linear-gradient(170deg, #072a44 0%, #031422 65%, #010a12 100%);
+      border: 2px solid #1c73a4;
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 0 16px rgba(0, 240, 255, 0.35);
+    }
+    .portrait-sub-bay::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 22px;
+      background: repeating-linear-gradient(0deg, rgba(0, 240, 255, 0.08) 0px, rgba(0, 240, 255, 0.08) 1px, transparent 2px, transparent 3px);
+      pointer-events: none;
+    }
+    .portrait-avatar-art { flex: 1; display: flex; align-items: center; justify-content: center; }
+    .portrait-hologram-head {
+      font-size: 3rem;
+      filter: drop-shadow(0 0 12px var(--psi-cyan));
+      animation: gentleFloat 3s ease-in-out infinite alternate;
+    }
+    @keyframes gentleFloat {
+      0% { transform: translateY(-2px) scale(0.98); }
+      100% { transform: translateY(2px) scale(1.02); }
+    }
+    .portrait-badge {
+      font-family: var(--font-rts-head);
+      font-size: 0.58rem;
+      letter-spacing: 0.5px;
+      color: var(--gold-bright);
+      text-transform: uppercase;
+      text-align: center;
+      background: rgba(2, 16, 26, 0.95);
+      border: 1px solid #1a6591;
+      padding: 2px 6px;
+      border-radius: 8px;
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 3x3 Command Card */
+    .command-bay {
+      border-radius: 20px 28px 24px 20px;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      background: linear-gradient(175deg, #072a44 0%, #031422 60%, #010a12 100%);
+      border: 2px solid #1c73a4;
+      border-top-color: var(--gold-bright);
+    }
+    .command-header-tag {
+      font-family: var(--font-rts-head);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--gold-bright);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+    }
+    .command-grid-3x3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 5px;
+      flex: 1;
+    }
+    .rts-cmd-btn {
+      background: linear-gradient(145deg, #0d3856 0%, #06263d 50%, #02121d 100%);
+      border: 1.5px solid #1d6e9c;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 3px;
+      transition: all 0.12s ease-in-out;
+      color: #d8f5ff;
+      box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.25), inset -1px -1px 3px rgba(0, 0, 0, 0.8), 0 2px 5px rgba(0, 0, 0, 0.6);
+    }
+    .rts-cmd-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(245, 196, 65, 0.8), transparent);
+    }
+    .rts-cmd-btn:hover {
+      border-color: var(--psi-cyan);
+      background: linear-gradient(145deg, #14557f 0%, #0a3a5a 50%, #031c2d 100%);
+      box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.5), 0 0 10px var(--psi-glow);
+      transform: translateY(-1px);
+    }
+    .rts-cmd-btn:active, .rts-cmd-btn.pressed {
+      transform: translateY(1px);
+      background: linear-gradient(145deg, var(--gold-mid) 0%, var(--gold-deep) 100%);
+      border-color: var(--gold-sheen);
+      color: #ffffff;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.85), 0 0 14px var(--gold-bright);
+    }
+    .cmd-hotkey-badge {
+      position: absolute;
+      top: 2px;
+      right: 3px;
+      font-family: var(--font-rts-head);
+      font-size: 0.58rem;
+      font-weight: 800;
+      background: #010e18;
+      border: 1px solid #1b6894;
+      color: var(--psi-cyan);
+      padding: 0 4px;
+      border-radius: 6px;
+      line-height: 1.1;
+    }
+    .rts-cmd-btn:hover .cmd-hotkey-badge {
+      border-color: var(--psi-cyan);
+      background: #032d47;
+      color: #ffffff;
+    }
+    .cmd-btn-icon {
+      font-size: 0.95rem;
+      color: var(--psi-cyan);
+      filter: drop-shadow(0 0 4px var(--psi-cyan));
+      transition: transform 0.1s ease;
+    }
+    .rts-cmd-btn:hover .cmd-btn-icon { transform: scale(1.15); color: #fff; }
+    .cmd-btn-label {
+      font-family: var(--font-rts-head);
+      font-size: 0.56rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1;
+      letter-spacing: 0.4px;
+      color: #ffffff;
+    }
+
+    /* FOOTER */
+    .console-chassis-footer {
+      height: 22px;
+      background: #01070e;
+      border-top: 1px solid #10415c;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: #63a0bf;
+    }
+    .footer-highlight { color: var(--gold-bright); font-weight: bold; }
+    .audio-synth-toggle { cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--psi-cyan); }
+    .audio-synth-toggle:hover { color: #ffffff; }
+  </style>
+</head>
+<body>
+<!-- SECTION 1: TACTICAL ORBITAL GRID & DOCKING MATRIX -->
+<section class="viewport-battlefield" id="mainBattlefieldViewport">
+<div class="star-grid"></div>
+<div class="tactical-grid-overlay"></div>
+<!-- Skyway Flight Top Strip: Clean & Streamlined -->
+<header class="sky-header">
+<div class="bridge-id">
+<div class="bridge-logo-gem"></div>
+<div>
+<div class="bridge-title">SZS AIRSHIP BRIDGE // PROTOSS ARCHITECTURE</div>
+<div class="bridge-sub">TACTICAL ORBITAL GRID &amp; DOCKING MATRIX // RTS WORKSPACE</div>
+</div>
+</div>
+<div class="sky-telemetry">
+<div class="sky-pill"><i class="fa-solid fa-satellite"></i> ORBITAL BEACON: HIGH WARP</div>
+<div class="sky-pill"><i class="fa-solid fa-shield-halved"></i> PLASMA SHIELDS: 100%</div>
+<div class="sky-pill"><i class="fa-solid fa-signal"></i> PSY-MATRIX: LOCKED</div>
+</div>
+</header>
+<!-- Interactive Drag-and-Drop Workspace Canvas -->
+<div class="tactical-sandbox-workspace" id="tacticalWorkspace">
+<!-- FLEET STAGING TRAY (Collapsible left drawer with dedicated chevron handle) -->
+<aside class="fleet-staging-tray" id="fleetStagingTray">
+<div class="tray-toggle-tab" onclick="toggleStagingTray()" title="Toggle Fleet Staging Tray">
+<i class="fa-solid fa-chevron-left"></i>
+</div>
+<div class="tray-header">
+<span class="tray-header-title"><i class="fa-solid fa-boxes-stacked"></i> FLEET STAGING</span>
+<span class="dock-badge" id="stagingCountBadge">6 ASSETS</span>
+</div>
+<div class="tray-units-list" id="stagingUnitsList">
+<div class="tray-unit-card" onclick="spawnTacticalAsset('probe')" title="Click or Drag out Recon Probe">
+<div class="tray-unit-icon">🤖</div>
+<div class="tray-unit-info">
+<div class="tray-unit-name">Recon Probe</div>
+<div class="tray-unit-role">Resource &amp; Waypoint</div>
+</div>
+<button class="tray-deploy-btn"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div class="tray-unit-card" onclick="spawnTacticalAsset('beacon')" title="Click or Drag out Warp Beacon">
+<div class="tray-unit-icon">📡</div>
+<div class="tray-unit-info">
+<div class="tray-unit-name">Psi Pylon Beacon</div>
+<div class="tray-unit-role">Matrix Power Conductor</div>
+</div>
+<button class="tray-deploy-btn"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div class="tray-unit-card" onclick="spawnTacticalAsset('breaker')" title="Click or Drag out Pebble Breaker">
+<div class="tray-unit-icon">⚡</div>
+<div class="tray-unit-info">
+<div class="tray-unit-name">Pebble Breaker</div>
+<div class="tray-unit-role">Roadblock Dispersal</div>
+</div>
+<button class="tray-deploy-btn"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div class="tray-unit-card" onclick="spawnTacticalAsset('carrier')" title="Click or Drag out Carrier Taskforce">
+<div class="tray-unit-icon">🛸</div>
+<div class="tray-unit-info">
+<div class="tray-unit-name">Carrier Taskforce</div>
+<div class="tray-unit-role">Macro Fleet Vanguard</div>
+</div>
+<button class="tray-deploy-btn"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div class="tray-unit-card" onclick="spawnTacticalAsset('templar')" title="Click or Drag out High Templar">
+<div class="tray-unit-icon">🔮</div>
+<div class="tray-unit-info">
+<div class="tray-unit-name">High Templar Node</div>
+<div class="tray-unit-role">Psionic Field Control</div>
+</div>
+<button class="tray-deploy-btn"><i class="fa-solid fa-plus"></i></button>
+</div>
+<div class="tray-unit-card" onclick="spawnTacticalAsset('scout')" title="Click or Drag out Scout Frigate">
+<div class="tray-unit-icon">🛰️</div>
+<div class="tray-unit-info">
+<div class="tray-unit-name">Scout Frigate</div>
+<div class="tray-unit-role">Deep Orbital Patrol</div>
+</div>
+<button class="tray-deploy-btn"><i class="fa-solid fa-plus"></i></button>
+</div>
+</div>
+</aside>
+<!-- Dynamic Psionic Tether Energy Lines Layer -->
+<svg class="psionic-tethers-svg" id="tetherSvgLayer">
+<defs>
+<filter height="200%" id="tetherGlow" width="200%" x="-50%" y="-50%">
+<fegaussianblur result="blur" stddeviation="2"></fegaussianblur>
+<femerge>
+<femergenode in="blur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+<lineargradient id="tetherGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#00f0ff" stop-opacity="0.8"></stop>
+<stop offset="50%" stop-color="#f5c441" stop-opacity="0.9"></stop>
+<stop offset="100%" stop-color="#00f0ff" stop-opacity="0.8"></stop>
+</lineargradient>
+</defs>
+<g id="tetherLinesGroup"></g>
+</svg>
+<!-- Designated Drop / Docking Zones (Toggleable via button under minimap) -->
+<div class="docking-zones-container" id="dockingZonesContainer">
+<div class="dock-zone" data-zone="WARP FORMATION DOCK" id="zone-formation">
+<div class="dock-zone-header">
+<span><i class="fa-solid fa-layer-group"></i> WARP FORMATION DOCK</span>
+<span class="dock-badge">SEC-01</span>
+</div>
+</div>
+<div class="dock-zone" data-zone="ORBITAL PATROL SECTOR" id="zone-patrol">
+<div class="dock-zone-header">
+<span><i class="fa-solid fa-satellite"></i> ORBITAL PATROL SECTOR</span>
+<span class="dock-badge">SEC-02</span>
+</div>
+</div>
+<div class="dock-zone" data-zone="EXPEDITION FLEET" id="zone-expedition">
+<div class="dock-zone-header">
+<span><i class="fa-solid fa-compass"></i> EXPEDITION FLEET</span>
+<span class="dock-badge">SEC-03</span>
+</div>
+</div>
+<div class="dock-zone zone-roadblock" data-zone="QUARANTINE / ROADBLOCK HOLD" id="zone-quarantine">
+<div class="dock-zone-header">
+<span><i class="fa-solid fa-triangle-exclamation"></i> QUARANTINE / ROADBLOCK</span>
+<span class="dock-badge" style="color: #ff9b9b; border-color: rgba(255,95,95,0.4);">HOLD-04</span>
+</div>
+</div>
+</div>
+<!-- Live Telemetry Coordinates HUD -->
+<div class="tactical-live-coords-hud">
+<div class="coords-dot"></div>
+<span id="canvasLiveCoords">TELEMETRY // X: 000 Y: 000 [GRID: READY]</span>
+</div>
+<!-- Draggable Unit Nodes -->
+<div id="draggableEntitiesContainer"></div>
+<!-- Holographic Targeting Reticle Center Indicator -->
+<div class="tactical-canvas-center">
+<div class="pulse-dot"></div>
+<div class="reticle-indicator">
+<span id="reticleLockText">TARGET LOCK ENGAGED</span>
+<span style="color: var(--gold-bright);">// PSY-TRANSMISSION CHANNEL ACTIVE</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: AUTHENTIC CURVED PROTOSS BROOD WAR / SC2 REMAKE BOTTOM HUD CONSOLE -->
+<footer class="protoss-console-container">
+<!-- Sculpted Carapace Canopy SVG: High-precision curved organic crest profile -->
+<svg class="protoss-canopy-svg-layer" preserveaspectratio="none" viewbox="0 0 1600 40">
+<defs>
+<lineargradient id="sculptedGoldGrad" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#fff8d6"></stop>
+<stop offset="25%" stop-color="#f5c441"></stop>
+<stop offset="55%" stop-color="#b8861b"></stop>
+<stop offset="85%" stop-color="#634305"></stop>
+<stop offset="100%" stop-color="#221501"></stop>
+</lineargradient>
+<lineargradient id="carapaceStrokeGrad" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#f5c441"></stop>
+<stop offset="15%" stop-color="#fff8d6"></stop>
+<stop offset="24%" stop-color="#b8861b"></stop>
+<stop offset="28%" stop-color="#1c7ba8"></stop>
+<stop offset="45%" stop-color="#2ea9e0"></stop>
+<stop offset="50%" stop-color="#fff8d6"></stop>
+<stop offset="55%" stop-color="#2ea9e0"></stop>
+<stop offset="72%" stop-color="#1c7ba8"></stop>
+<stop offset="76%" stop-color="#b8861b"></stop>
+<stop offset="88%" stop-color="#fff8d6"></stop>
+<stop offset="100%" stop-color="#f5c441"></stop>
+</lineargradient>
+</defs>
+<path d="M 0 40 L 0 24 C 5 14, 25 3, 70 3 C 145 3, 220 5, 270 20 C 295 28, 315 37, 345 38 L 345 40 Z" fill="url(#sculptedGoldGrad)"></path>
+<path d="M 12 20 C 45 6, 120 5, 225 10 C 265 12, 290 22, 315 32" fill="none" stroke="#fff8d6" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M 345 38 C 380 39, 440 37, 800 37 C 1160 37, 1220 39, 1255 38 L 1255 40 L 345 40 Z" fill="#041b2c"></path>
+<path d="M 1255 38 C 1285 37, 1305 28, 1330 20 C 1380 5, 1455 3, 1530 3 C 1575 3, 1595 14, 1600 24 L 1600 40 Z" fill="url(#sculptedGoldGrad)"></path>
+<path d="M 1285 32 C 1310 22, 1335 12, 1375 10 C 1480 5, 1555 6, 1588 20" fill="none" stroke="#fff8d6" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M 0 24 C 5 14, 25 3, 70 3 C 145 3, 220 5, 270 20 C 295 28, 315 37, 345 38 C 380 39, 440 37, 800 37 C 1160 37, 1220 39, 1255 38 C 1285 37, 1305 28, 1330 20 C 1380 5, 1455 3, 1530 3 C 1575 3, 1595 14, 1600 24" fill="none" stroke="url(#carapaceStrokeGrad)" stroke-width="2"></path>
+</svg>
+<!-- Top Micro Pipeline & Resource Strip -->
+<div class="console-sub-bar">
+<!-- Center Golden Dome Nodule -->
+<div class="curved-center-gemstone"></div>
+<!-- 12-Unit Selection Pips Strip: Doubles as RTS Control Groups [1-9] -->
+<div class="selection-queue-strip" id="controlGroupStrip">
+<div class="queue-pip" data-group="1" onclick="recallControlGroup(1)" title="Group 1 (Press 1 to recall, Shift+1 to bind)">1</div>
+<div class="queue-pip" data-group="2" onclick="recallControlGroup(2)" title="Group 2 (Press 2 to recall, Shift+2 to bind)">2</div>
+<div class="queue-pip" data-group="3" onclick="recallControlGroup(3)" title="Group 3 (Press 3 to recall, Shift+3 to bind)">3</div>
+<div class="queue-pip" data-group="4" onclick="recallControlGroup(4)" title="Group 4 (Press 4 to recall, Shift+4 to bind)">4</div>
+<div class="queue-pip" data-group="5" onclick="recallControlGroup(5)" title="Group 5 (Press 5 to recall, Shift+5 to bind)">5</div>
+<div class="queue-pip" data-group="6" onclick="recallControlGroup(6)" title="Group 6 (Press 6 to recall, Shift+6 to bind)">6</div>
+<div class="queue-pip" data-group="7" onclick="recallControlGroup(7)" title="Group 7 (Press 7 to recall, Shift+7 to bind)">7</div>
+<div class="queue-pip" data-group="8" onclick="recallControlGroup(8)" title="Group 8 (Press 8 to recall, Shift+8 to bind)">8</div>
+<div class="queue-pip" data-group="9" onclick="recallControlGroup(9)" title="Group 9 (Press 9 to recall, Shift+9 to bind)">9</div>
+<div class="queue-pip" data-group="10" onclick="recallControlGroup(10)">10</div>
+<div class="queue-pip" data-group="11" onclick="recallControlGroup(11)">11</div>
+<div class="queue-pip" data-group="12" onclick="recallControlGroup(12)">12</div>
+</div>
+<!-- Right Rim Resources -->
+<div class="top-rim-resources">
+<div class="resource-pod minerals">
+<i class="fa-solid fa-gem"></i>
+<span class="res-num" id="topResBounty">$12,500 USDC</span>
+</div>
+<div class="resource-pod gas">
+<i class="fa-solid fa-fire-flame-curved"></i>
+<span class="res-num">GAS: 750</span>
+</div>
+<div class="resource-pod psi">
+<i class="fa-solid fa-bolt"></i>
+<span class="res-num" id="topResPsi">PSI: 82/100</span>
+</div>
+<button class="menu-button-pod" onclick="synthBeep(980)">MENU [F10]</button>
+</div>
+</div>
+<!-- Main Interior 3-Zone Curved Chassis -->
+<div class="console-main-interior">
+<!-- ZONE 1: MINIMAP & REORGANIZED TACTICAL CONTROLS -->
+<div class="chassis-bay minimap-bay">
+<div class="minimap-top-controls">
+<span id="minimapHeaderMode"><i class="fa-solid fa-crosshairs"></i> RADAR // ORBITAL</span>
+<span style="color: var(--plasma-green);"><i class="fa-solid fa-circle-dot"></i> LIVE</span>
+</div>
+<div class="minimap-screen">
+<div class="radar-sweep"></div>
+<div class="minimap-contour"></div>
+<div class="camera-frustum" id="minimapFrustum"></div>
+<div class="radar-blip" id="radarBlip1" style="top: 30%; left: 35%;"></div>
+<div class="radar-blip" id="radarBlip2" style="top: 55%; left: 68%;"></div>
+<div class="radar-blip" id="radarBlip3" style="top: 70%; left: 40%;"></div>
+<div class="radar-blip" id="radarBlip4" style="top: 20%; left: 80%;"></div>
+<div class="radar-blip" id="radarBlip5" style="top: 45%; left: 52%; background: var(--gold-bright); box-shadow: 0 0 8px var(--gold-bright);"></div>
+</div>
+<!-- REORGANIZED TACTICAL ACTION CYBER-BUTTONS UNDER MINIMAP -->
+<div class="minimap-bottom-actions">
+<button class="mini-tool-btn mode-active" id="sectorsToggleBtn" onclick="toggleSectorsVisibility()" title="Toggle Docking Sectors Overlay (SEC-01 to HOLD)">
+<i class="fa-solid fa-draw-polygon"></i>
+<span id="sectorsStateLabel">SECTORS: ON</span>
+</button>
+<button class="mini-tool-btn active-toggle" id="gridSnapToggleBtn" onclick="toggleGridSnap()" title="Toggle 20px Grid Snapping">
+<i class="fa-solid fa-border-all"></i>
+<span id="snapStateLabel">SNAP: ON</span>
+</button>
+<button class="mini-tool-btn" id="formationBtn" onclick="resetUnitFormations()" title="Realign fleet into default formation">
+<i class="fa-solid fa-arrows-to-circle"></i>
+<span>FORMATION</span>
+</button>
+<button class="mini-tool-btn danger-action" id="clearBtn" onclick="clearFieldTactical()" title="Purge temporary assets">
+<i class="fa-solid fa-trash-can"></i>
+<span>CLEAR</span>
+</button>
+</div>
+</div>
+<!-- ZONE 2: ULTRA-FLAT CENTER UNIT STATUS DOSSIER -->
+<div class="chassis-bay dossier-bay">
+<div class="dossier-top-block">
+<div class="wireframe-console-box">
+<span class="wireframe-icon" id="dossierAvatar">🎮</span>
+<div class="wireframe-values">
+<div class="val-shield" id="wireShieldText">S: 150/150</div>
+<div class="val-health" id="wireHealthText">V: 200/200</div>
+</div>
+</div>
+<div class="dossier-info-col">
+<div class="unit-name-title">
+<span id="dossierName">Marco Vance</span>
+<span class="unit-rank-badge" id="dossierRank">Rank: Disciple</span>
+<span class="unit-coords-badge" id="dossierCoordsBadge">X: 35 | Y: 45</span>
+</div>
+<div class="unit-role-sub" id="dossierArchetype">Tech-Savvy Game Developer</div>
+<div class="weapon-armor-upgrade-matrix">
+<div class="upgrade-slot-box" title="Plasma Shield Level 3"><i class="fa-solid fa-shield-halved"></i> 3</div>
+<div class="upgrade-slot-box" title="Psionic Arc Weapon"><i class="fa-solid fa-bolt"></i> 2</div>
+<div class="upgrade-slot-box" title="Cyber Armor Plating"><i class="fa-solid fa-circle-notch"></i> 1</div>
+<span style="font-family: var(--font-mono); font-size: 0.68rem; color: #7cb8d6; margin-left: 6px;">Light - Mechanical</span>
+</div>
+</div>
+</div>
+<div class="dossier-lower-metrics">
+<div class="metric-item">
+<span class="metric-lbl"><i class="fa-solid fa-dungeon"></i> Current Quest Objective</span>
+<span class="metric-val" id="dossierStage" style="color: var(--psi-cyan);">Boss Raid: Prototype V1</span>
+</div>
+<div class="metric-item">
+<span class="metric-lbl"><i class="fa-solid fa-triangle-exclamation"></i> Roadblock / Active Pebble</span>
+<span class="metric-val alert" id="dossierPebble">Unoptimized shader pipeline causing drops</span>
+</div>
+</div>
+<div class="compact-terminal-log" id="terminalLogStream">
+<div class="term-line"><span class="term-time">[00:01]</span> <span class="term-srv">Tactical orbital grid loaded. Free drag-and-drop &amp; multi-select ready.</span></div>
+<div class="term-line"><span class="term-time">[00:02]</span> <span class="term-act">Hold [SHIFT + Click] for multi-selection. [SHIFT + 1-9] binds Control Groups.</span></div>
+</div>
+</div>
+<!-- ZONE 3: RIGHT SECTION (PORTRAIT + 3x3 COMMAND MATRIX POD) -->
+<div class="command-and-portrait-zone">
+<div class="portrait-sub-bay">
+<div class="portrait-avatar-art">
+<span class="portrait-hologram-head" id="portraitAvatarLarge">👾</span>
+</div>
+<div class="portrait-badge" id="portraitTargetId">TARGET: C-101 // WARP SYNC</div>
+</div>
+<div class="chassis-bay command-bay">
+<div class="command-header-tag">
+<span><i class="fa-solid fa-gamepad"></i> COMMAND CARD</span>
+<span style="font-size: 0.62rem; color: var(--psi-cyan);">MACRO MATRIX</span>
+</div>
+<div class="command-grid-3x3">
+<button class="rts-cmd-btn" data-key="Q" data-spell="Conjure Deck" onclick="triggerAbility('Q')">
+<span class="cmd-hotkey-badge">Q</span>
+<i class="fa-solid fa-file-powerpoint cmd-btn-icon"></i>
+<span class="cmd-btn-label">Deck</span>
+</button>
+<button class="rts-cmd-btn" data-key="W" data-spell="Sanctum Drive" onclick="triggerAbility('W')">
+<span class="cmd-hotkey-badge">W</span>
+<i class="fa-brands fa-google-drive cmd-btn-icon"></i>
+<span class="cmd-btn-label">Drive</span>
+</button>
+<button class="rts-cmd-btn" data-key="E" data-spell="Scry Profile" onclick="triggerAbility('E')">
+<span class="cmd-hotkey-badge">E</span>
+<i class="fa-solid fa-magnifying-glass-chart cmd-btn-icon"></i>
+<span class="cmd-btn-label">Scry</span>
+</button>
+<button class="rts-cmd-btn" data-key="A" data-spell="Purge Pebble" onclick="triggerAbility('A')">
+<span class="cmd-hotkey-badge">A</span>
+<i class="fa-solid fa-wand-magic-sparkles cmd-btn-icon"></i>
+<span class="cmd-btn-label">Purge</span>
+</button>
+<button class="rts-cmd-btn" data-key="S" data-spell="Cast Invoice" onclick="triggerAbility('S')">
+<span class="cmd-hotkey-badge">S</span>
+<i class="fa-solid fa-file-invoice-dollar cmd-btn-icon"></i>
+<span class="cmd-btn-label">Invoice</span>
+</button>
+<button class="rts-cmd-btn" data-key="D" data-spell="Summon Meet" onclick="triggerAbility('D')">
+<span class="cmd-hotkey-badge">D</span>
+<i class="fa-solid fa-video cmd-btn-icon"></i>
+<span class="cmd-btn-label">Meet</span>
+</button>
+<button class="rts-cmd-btn" data-key="Z" data-spell="NFC Ping" onclick="triggerAbility('Z')">
+<span class="cmd-hotkey-badge">Z</span>
+<i class="fa-solid fa-tower-broadcast cmd-btn-icon"></i>
+<span class="cmd-btn-label">NFC</span>
+</button>
+<button class="rts-cmd-btn" data-key="X" data-spell="Intake Dossier" onclick="triggerAbility('X')">
+<span class="cmd-hotkey-badge">X</span>
+<i class="fa-solid fa-book-skull cmd-btn-icon"></i>
+<span class="cmd-btn-label">Intake</span>
+</button>
+<button class="rts-cmd-btn" data-key="C" data-spell="Advance Quest" onclick="triggerAbility('C')">
+<span class="cmd-hotkey-badge">C</span>
+<i class="fa-solid fa-chevron-right cmd-btn-icon"></i>
+<span class="cmd-btn-label">Advance</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Status Chassis Footer -->
+<div class="console-chassis-footer">
+<div>
+<span>PROTOSS BROOD WAR REMAKE HUD // ARCHITECTURE: <span class="footer-highlight">TEMPLAR CLASS</span></span>
+</div>
+<div>
+<span>HOTKEYS ACTIVE: <span style="color: var(--psi-cyan);">[Q, W, E, A, S, D, Z, X, C]</span> | GROUPS: <span style="color:var(--gold-bright);">[1-9] (Shift+Click: Multi)</span></span>
+</div>
+<div class="audio-synth-toggle" onclick="synthBeep()">
+<i class="fa-solid fa-volume-high"></i>
+<span>AUDIO SYNTH: ON</span>
+</div>
+</div>
+</footer>
+<!-- SCRIPT LOGIC -->
+<script>
+    // State
+    let clientsData = [
+      { id: "C-101", name: "Marco Vance", archetype: "Tech-Savvy Game Developer", avatar: "🎮", questStage: "Boss Raid: Prototype V1", activePebble: "Unoptimized shader pipeline causing drops", treasuryBounty: "$12,500 USDC", rank: "Disciple", posX: 35, posY: 45 },
+      { id: "C-102", name: "Jake Sterling", archetype: "Master Craftsman & Fabricator", avatar: "⚒️", questStage: "Expedition: Field Deployment", activePebble: "Awaiting municipal permit sign-off", treasuryBounty: "$8,200 USD", rank: "Zealot", posX: 255, posY: 60 },
+      { id: "C-103", name: "Seraphina Lin", archetype: "Alchemical FinTech Architect", avatar: "🔮", questStage: "Sanctum Ritual: Security Audit", activePebble: "Multi-sig escrow gas limit variance", treasuryBounty: "$24,000 DAI", rank: "High Templar", posX: 480, posY: 45 },
+      { id: "C-104", name: "Kaelen Voss", archetype: "Cyber-Guild Strategist", avatar: "🛰️", questStage: "Scouting: Discovery & Intake", activePebble: "Stakeholder misalignment on scope milestones", treasuryBounty: "$6,500 USD", rank: "Observer", posX: 710, posY: 65 },
+      { id: "C-105", name: "Lyra Thorne", archetype: "Bio-Synthetic Brand Visionary", avatar: "🧬", questStage: "Enchantment: Visual Overhaul", activePebble: "Font licensing clearance for Gothic Glyphs", treasuryBounty: "$15,750 USD", rank: "Arbiter", posX: 940, posY: 50 }
+    ];
+    let selectedUnitIds = ["C-101"];
+    let activeClientId = "C-101";
+    let controlGroups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [] };
+    let sectorsVisible = true;
+    let gridSnapEnabled = true;
+    let audioCtx = null;
+    let nextGeneratedId = 200;
+
+    // Web Audio Synthesizer
+    function synthBeep(freq = 780, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.45, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function synthSelectSound() {
+      synthBeep(850, 'square', 0.06);
+      setTimeout(() => synthBeep(1350, 'sine', 0.09), 40);
+    }
+
+    function synthCommandSound() {
+      synthBeep(520, 'sawtooth', 0.08);
+      setTimeout(() => synthBeep(920, 'sine', 0.12), 50);
+    }
+
+    function synthWarpSound() {
+      synthBeep(420, 'triangle', 0.12);
+      setTimeout(() => synthBeep(880, 'sine', 0.15), 60);
+    }
+
+    // Terminal Logging Engine
+    function logTerminal(message, type = 'normal') {
+      const stream = document.getElementById('terminalLogStream');
+      if (!stream) return;
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0].substring(3);
+      const line = document.createElement('div');
+      line.className = 'term-line';
+      line.innerHTML = `<span class="term-time">[${timeStr}]</span> <span class="${type === 'action' ? 'term-act' : (type === 'server' ? 'term-srv' : '')}">${message}</span>`;
+      stream.appendChild(line);
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    // 1. FLEET STAGING TRAY COLLAPSE / EXPAND VIA RETRACTABLE SIDE TAB
+    function toggleStagingTray() {
+      const tray = document.getElementById('fleetStagingTray');
+      tray.classList.toggle('collapsed');
+      synthBeep(tray.classList.contains('collapsed') ? 480 : 880);
+    }
+
+    // 2. TOGGLEABLE SECTORS VIA MINIMAP CYBER BUTTON
+    function toggleSectorsVisibility() {
+      sectorsVisible = !sectorsVisible;
+      const container = document.getElementById('dockingZonesContainer');
+      const btn = document.getElementById('sectorsToggleBtn');
+      const label = document.getElementById('sectorsStateLabel');
+
+      if (sectorsVisible) {
+        container.classList.remove('sectors-hidden');
+        btn.classList.add('mode-active');
+        label.textContent = 'SECTORS: ON';
+        logTerminal('Orbital Docking Sectors initialized: SEC-01 through HOLD-04 active.', 'server');
+        synthBeep(1100, 'sine', 0.1);
+      } else {
+        container.classList.add('sectors-hidden');
+        btn.classList.remove('mode-active');
+        label.textContent = 'SECTORS: OFF';
+        logTerminal('Orbital Docking Sectors concealed. Freeform starfield engaged.', 'normal');
+        synthBeep(520, 'sine', 0.1);
+      }
+      updateEnergyTethers();
+    }
+
+    // Toggle Grid Snapping via minimap cyber button
+    function toggleGridSnap() {
+      gridSnapEnabled = !gridSnapEnabled;
+      const btn = document.getElementById('gridSnapToggleBtn');
+      const label = document.getElementById('snapStateLabel');
+      if (gridSnapEnabled) {
+        btn.classList.add('active-toggle');
+        label.textContent = 'SNAP: ON';
+        logTerminal('Grid Snapping enabled (20px magnetic alignment).', 'normal');
+      } else {
+        btn.classList.remove('active-toggle');
+        label.textContent = 'SNAP: OFF';
+        logTerminal('Grid Snapping disabled (Smooth free-float coordinates).', 'normal');
+      }
+      synthBeep(750);
+    }
+
+    function getSectorFromCoordinates(x, y, maxX) {
+      const col = Math.min(3, Math.max(0, Math.floor((x / maxX) * 4)));
+      const sectorNames = [
+        "WARP FORMATION DOCK (SEC-01)",
+        "ORBITAL PATROL SECTOR (SEC-02)",
+        "EXPEDITION FLEET (SEC-03)",
+        "QUARANTINE / ROADBLOCK HOLD (SEC-04)"
+      ];
+      return sectorNames[col] || "ORBITAL VECTOR";
+    }
+
+    // Render Draggable Units
+    function renderDraggableUnits() {
+      const container = document.getElementById('draggableEntitiesContainer');
+      container.innerHTML = '';
+
+      clientsData.forEach((client) => {
+        const isPrimary = (client.id === activeClientId);
+        const isMulti = selectedUnitIds.includes(client.id);
+
+        const node = document.createElement('div');
+        node.className = `draggable-unit-node ${isPrimary ? 'active-unit' : (isMulti ? 'multi-selected' : '')}`;
+        node.id = `unit-${client.id}`;
+        node.style.left = `${client.posX}px`;
+        node.style.top = `${client.posY}px`;
+
+        node.innerHTML = `
+          <div class="node-header">
+            <div class="node-icon-box">${client.avatar || '🎯'}</div>
+            <div class="node-details">
+              <div class="node-name">${client.name}</div>
+              <div class="node-role">${client.archetype}</div>
+            </div>
+            <span class="node-coords-tag" id="tag-${client.id}">X:${Math.round(client.posX)}</span>
+          </div>
+          <div class="node-bars">
+            <div class="bar-line"><div class="bar-line-fill shield"></div></div>
+            <div class="bar-line"><div class="bar-line-fill health"></div></div>
+          </div>
+          <div class="node-foot">
+            <span><i class="fa-solid fa-flag"></i> ${client.questStage.split(':')[0]}</span>
+            <span style="color:var(--gold-bright);">${client.treasuryBounty}</span>
+          </div>
+        `;
+
+        setupDraggableElement(node, client);
+        container.appendChild(node);
+      });
+
+      updateEnergyTethers();
+      updateMinimapBlips();
+    }
+
+    // MULTI-SELECTION & DRAGGING
+    function setupDraggableElement(el, client) {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+      let initialLeft = 0, initialTop = 0;
+      let hasMoved = false;
+
+      function onPointerDown(e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        isDragging = true;
+        hasMoved = false;
+        el.classList.add('dragging');
+
+        const rect = el.getBoundingClientRect();
+        const parentRect = document.getElementById('tacticalWorkspace').getBoundingClientRect();
+
+        startX = e.clientX;
+        startY = e.clientY;
+        initialLeft = rect.left - parentRect.left;
+        initialTop = rect.top - parentRect.top;
+
+        if (e.shiftKey) {
+          toggleMultiSelectUnit(client.id);
+        } else {
+          if (!selectedUnitIds.includes(client.id)) {
+            selectedUnitIds = [client.id];
+          }
+          selectUnit(client.id);
+        }
+
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+        document.addEventListener('pointercancel', onPointerUp);
+      }
+
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved = true;
+
+        const workspace = document.getElementById('tacticalWorkspace');
+        const maxW = workspace.clientWidth - el.offsetWidth - 10;
+        const maxH = workspace.clientHeight - el.offsetHeight - 10;
+
+        let newX = initialLeft + dx;
+        let newY = initialTop + dy;
+
+        if (gridSnapEnabled) {
+          const snapGrid = 20;
+          newX = Math.round(newX / snapGrid) * snapGrid;
+          newY = Math.round(newY / snapGrid) * snapGrid;
+        }
+
+        newX = Math.max(10, Math.min(newX, maxW));
+        newY = Math.max(10, Math.min(newY, maxH));
+
+        el.style.left = `${newX}px`;
+        el.style.top = `${newY}px`;
+        client.posX = newX;
+        client.posY = newY;
+
+        const tag = document.getElementById(`tag-${client.id}`);
+        if (tag) tag.textContent = `X:${Math.round(newX)} Y:${Math.round(newY)}`;
+
+        const curSector = getSectorFromCoordinates(newX, newY, workspace.clientWidth);
+        document.getElementById('canvasLiveCoords').textContent = `LIVE // [${client.name}] X: ${Math.round(newX)} Y: ${Math.round(newY)} // ${curSector}`;
+
+        if (sectorsVisible) checkDockZoneHover(el);
+        updateEnergyTethers();
+        updateMinimapBlips();
+      }
+
+      function onPointerUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        el.classList.remove('dragging');
+
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        document.removeEventListener('pointercancel', onPointerUp);
+
+        const droppedZone = sectorsVisible ? checkDockZoneDrop(el) : null;
+        const workspace = document.getElementById('tacticalWorkspace');
+        const finalSector = droppedZone ? droppedZone.getAttribute('data-zone') : getSectorFromCoordinates(client.posX, client.posY, workspace.clientWidth);
+
+        if (hasMoved) {
+          synthBeep(1200, 'sine', 0.05);
+          logTerminal(`Unit re-positioned: ${client.name} at [${finalSector}] (X: ${Math.round(client.posX)}, Y: ${Math.round(client.posY)})`, 'action');
+          if (droppedZone && droppedZone.id === 'zone-quarantine') {
+            client.activePebble = 'QUARANTINE LOCK: Psionic anomaly detected in milestone.';
+            document.getElementById('dossierPebble').textContent = client.activePebble;
+            synthBeep(350, 'sawtooth', 0.15);
+          }
+        }
+
+        document.getElementById('dossierCoordsBadge').textContent = `X: ${Math.round(client.posX)} | Y: ${Math.round(client.posY)}`;
+        updateEnergyTethers();
+      }
+
+      el.addEventListener('pointerdown', onPointerDown);
+    }
+
+    function toggleMultiSelectUnit(clientId) {
+      if (selectedUnitIds.includes(clientId)) {
+        selectedUnitIds = selectedUnitIds.filter(id => id !== clientId);
+        if (activeClientId === clientId) activeClientId = selectedUnitIds[0] || null;
+      } else {
+        selectedUnitIds.push(clientId);
+        activeClientId = clientId;
+      }
+      refreshSelectionVisuals();
+      synthSelectSound();
+    }
+
+    function selectUnit(clientId) {
+      activeClientId = clientId;
+      if (!selectedUnitIds.includes(clientId)) selectedUnitIds = [clientId];
+      refreshSelectionVisuals();
+      synthSelectSound();
+    }
+
+    function refreshSelectionVisuals() {
+      document.querySelectorAll('.draggable-unit-node').forEach(node => {
+        node.classList.remove('active-unit', 'multi-selected');
+      });
+
+      selectedUnitIds.forEach(id => {
+        const node = document.getElementById(`unit-${id}`);
+        if (!node) return;
+        if (id === activeClientId) node.classList.add('active-unit');
+        else node.classList.add('multi-selected');
+      });
+
+      const client = clientsData.find(c => c.id === activeClientId) || clientsData[0];
+      if (!client) return;
+
+      const selCount = selectedUnitIds.length;
+
+      if (selCount > 1) {
+        document.getElementById('dossierName').textContent = `${selCount} Units Selected`;
+        document.getElementById('dossierRank').textContent = `Multi-Lock Active`;
+        document.getElementById('dossierArchetype').textContent = `Combined Tactical Taskforce (Lead: ${client.name})`;
+        document.getElementById('dossierAvatar').textContent = '🛡️';
+        document.getElementById('portraitAvatarLarge').textContent = '🛡️';
+        document.getElementById('portraitTargetId').textContent = `GROUP MATRIX // ${selCount} UNITS`;
+        document.getElementById('reticleLockText').textContent = `MULTI-TARGET LOCK (${selCount} UNITS)`;
+        logTerminal(`Multi-Selection: ${selCount} units grouped under psionic matrix.`, 'action');
+      } else {
+        document.getElementById('dossierName').textContent = client.name;
+        document.getElementById('dossierRank').textContent = `Rank: ${client.rank || 'Disciple'}`;
+        document.getElementById('dossierArchetype').textContent = client.archetype;
+        document.getElementById('dossierAvatar').textContent = client.avatar || '🎮';
+        document.getElementById('portraitAvatarLarge').textContent = client.avatar || '👾';
+        document.getElementById('portraitTargetId').textContent = `TARGET: ${client.id} // ACTIVE`;
+        document.getElementById('reticleLockText').textContent = `TARGET LOCK ENGAGED`;
+      }
+
+      document.getElementById('dossierStage').textContent = client.questStage;
+      document.getElementById('dossierPebble').textContent = client.activePebble;
+      document.getElementById('topResBounty').textContent = client.treasuryBounty;
+      document.getElementById('dossierCoordsBadge').textContent = `X: ${Math.round(client.posX || 35)} | Y: ${Math.round(client.posY || 45)}`;
+
+      const frustum = document.getElementById('minimapFrustum');
+      if (frustum && client.posX !== undefined) {
+        const workspace = document.getElementById('tacticalWorkspace');
+        const mapX = ((client.posX) / (workspace.clientWidth || 1200)) * 60 + 10;
+        const mapY = ((client.posY) / (workspace.clientHeight || 450)) * 60 + 10;
+        frustum.style.left = `${mapX}%`;
+        frustum.style.top = `${mapY}%`;
+      }
+
+      updateEnergyTethers();
+    }
+
+    // CONTROL GROUPS ENGINE (Shift+1-9 / Ctrl+1-9 to Bind, 1-9 to Recall)
+    function bindControlGroup(groupNum) {
+      if (selectedUnitIds.length === 0) return;
+      controlGroups[groupNum] = [...selectedUnitIds];
+      synthCommandSound();
+      updateControlGroupPips();
+
+      const names = selectedUnitIds.map(id => {
+        const c = clientsData.find(x => x.id === id);
+        return c ? c.name : id;
+      }).join(', ');
+
+      logTerminal(`⚡ CONTROL GROUP [${groupNum}] BOUND: ${selectedUnitIds.length} Unit(s) [${names}]`, 'action');
+    }
+
+    function recallControlGroup(groupNum) {
+      const group = controlGroups[groupNum];
+      if (!group || group.length === 0) {
+        logTerminal(`Control Group [${groupNum}] is empty. Select units and press [Shift+${groupNum}] to bind.`, 'normal');
+        synthBeep(320, 'sine', 0.1);
+        return;
+      }
+
+      selectedUnitIds = [...group];
+      activeClientId = group[0];
+      refreshSelectionVisuals();
+      synthSelectSound();
+
+      document.querySelectorAll('.queue-pip').forEach(p => p.classList.remove('active-group'));
+      const activePip = document.querySelector(`.queue-pip[data-group="${groupNum}"]`);
+      if (activePip) activePip.classList.add('active-group');
+
+      logTerminal(`Control Group [${groupNum}] Recalled (${group.length} units selected).`, 'server');
+    }
+
+    function updateControlGroupPips() {
+      for (let i = 1; i <= 9; i++) {
+        const pip = document.querySelector(`.queue-pip[data-group="${i}"]`);
+        if (!pip) continue;
+        if (controlGroups[i] && controlGroups[i].length > 0) {
+          pip.classList.add('has-binding');
+        } else {
+          pip.classList.remove('has-binding');
+        }
+      }
+    }
+
+    // Dock zone collisions
+    function checkDockZoneHover(element) {
+      const elRect = element.getBoundingClientRect();
+      const elCenter = { x: elRect.left + elRect.width / 2, y: elRect.top + elRect.height / 2 };
+      document.querySelectorAll('.dock-zone').forEach(zone => {
+        const zRect = zone.getBoundingClientRect();
+        if (elCenter.x >= zRect.left && elCenter.x <= zRect.right && elCenter.y >= zRect.top && elCenter.y <= zRect.bottom) {
+          zone.classList.add('drag-hover');
+        } else {
+          zone.classList.remove('drag-hover');
+        }
+      });
+    }
+
+    function checkDockZoneDrop(element) {
+      const elRect = element.getBoundingClientRect();
+      const elCenter = { x: elRect.left + elRect.width / 2, y: elRect.top + elRect.height / 2 };
+      let targetZone = null;
+      document.querySelectorAll('.dock-zone').forEach(zone => {
+        zone.classList.remove('drag-hover');
+        const zRect = zone.getBoundingClientRect();
+        if (elCenter.x >= zRect.left && elCenter.x <= zRect.right && elCenter.y >= zRect.top && elCenter.y <= zRect.bottom) {
+          targetZone = zone;
+        }
+      });
+      return targetZone;
+    }
+
+    // Psionic Energy Tethers
+    function updateEnergyTethers() {
+      const group = document.getElementById('tetherLinesGroup');
+      if (!group) return;
+      group.innerHTML = '';
+      if (clientsData.length < 2) return;
+
+      const activeClient = clientsData.find(c => c.id === activeClientId) || clientsData[0];
+      const activeX = (activeClient.posX || 100) + 100;
+      const activeY = (activeClient.posY || 50) + 35;
+
+      clientsData.forEach(target => {
+        if (target.id === activeClient.id) return;
+        const targetX = (target.posX || 100) + 100;
+        const targetY = (target.posY || 50) + 35;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', activeX);
+        line.setAttribute('y1', activeY);
+        line.setAttribute('x2', targetX);
+        line.setAttribute('y2', targetY);
+        line.setAttribute('stroke', 'url(#tetherGradient)');
+        line.setAttribute('stroke-width', selectedUnitIds.includes(target.id) ? '2.5' : '1.5');
+        line.setAttribute('stroke-dasharray', selectedUnitIds.includes(target.id) ? 'none' : '4, 4');
+        line.setAttribute('stroke-opacity', selectedUnitIds.includes(target.id) ? '0.9' : '0.5');
+        line.setAttribute('filter', 'url(#tetherGlow)');
+        group.appendChild(line);
+      });
+    }
+
+    function updateMinimapBlips() {
+      const workspace = document.getElementById('tacticalWorkspace');
+      const w = workspace.clientWidth || 1200;
+      const h = workspace.clientHeight || 450;
+      clientsData.slice(0, 5).forEach((client, idx) => {
+        const blip = document.getElementById(`radarBlip${idx + 1}`);
+        if (blip && client.posX !== undefined) {
+          const mapX = (client.posX / w) * 85 + 5;
+          const mapY = (client.posY / h) * 80 + 10;
+          blip.style.left = `${mapX}%`;
+          blip.style.top = `${mapY}%`;
+        }
+      });
+    }
+
+    // Spawn Tactical Assets
+    function spawnTacticalAsset(type) {
+      synthWarpSound();
+      nextGeneratedId++;
+      const id = `TX-${nextGeneratedId}`;
+      const presets = {
+        probe: { name: `Recon Probe #${nextGeneratedId}`, archetype: 'Robotic Cyber-Worker', avatar: '🤖', bounty: '$3,500 USDC' },
+        beacon: { name: `Warp Beacon #${nextGeneratedId}`, archetype: 'Sub-Space Quantum Relayer', avatar: '📡', bounty: '$5,000 USDC' },
+        breaker: { name: `Pebble Breaker #${nextGeneratedId}`, archetype: 'Roadblock Dispersal Drone', avatar: '⚡', bounty: '$4,200 USDC' },
+        carrier: { name: `Carrier Taskforce #${nextGeneratedId}`, archetype: 'Heavy Capital Command', avatar: '🛸', bounty: '$35,000 USDC' },
+        templar: { name: `High Templar Node #${nextGeneratedId}`, archetype: 'Psionic Storm Weaver', avatar: '🔮', bounty: '$18,500 USDC' },
+        scout: { name: `Scout Frigate #${nextGeneratedId}`, archetype: 'Deep Orbital Interceptor', avatar: '🛰️', bounty: '$6,800 USDC' }
+      };
+      const p = presets[type] || presets.probe;
+      const newAsset = {
+        id: id,
+        name: p.name,
+        archetype: p.archetype,
+        avatar: p.avatar,
+        questStage: 'Tactical Recon: Waypoint Scanning',
+        activePebble: 'None. Harmonic warp matrix active.',
+        treasuryBounty: p.bounty,
+        rank: 'Vanguard',
+        posX: 140 + (Math.random() * 380),
+        posY: 90 + (Math.random() * 150)
+      };
+
+      clientsData.push(newAsset);
+      renderDraggableUnits();
+      selectUnit(id);
+      logTerminal(`✓ WARP IN: [${newAsset.name}] deployed at X: ${Math.round(newAsset.posX)}, Y: ${Math.round(newAsset.posY)}`, 'action');
+    }
+
+    function resetUnitFormations() {
+      synthBeep(880, 'sine', 0.12);
+      const defaultXs = [35, 255, 480, 710, 940];
+      const defaultYs = [45, 60, 45, 65, 50];
+      clientsData.forEach((client, idx) => {
+        client.posX = defaultXs[idx % defaultXs.length];
+        client.posY = defaultYs[idx % defaultYs.length];
+      });
+      renderDraggableUnits();
+      if (activeClientId) selectUnit(activeClientId);
+      logTerminal('Tactical fleet reset to standard orbital echelon formation.', 'server');
+    }
+
+    function clearFieldTactical() {
+      synthBeep(450, 'sawtooth', 0.12);
+      clientsData = clientsData.slice(0, 5);
+      renderDraggableUnits();
+      if (clientsData.length > 0) selectUnit(clientsData[0].id);
+      logTerminal('Auxiliary tactical tokens cleared. Core operational fleet maintained.', 'action');
+    }
+
+    function triggerAbility(key) {
+      const btn = document.querySelector(`.rts-cmd-btn[data-key="${key.toUpperCase()}"]`);
+      if (!btn) return;
+      synthCommandSound();
+      btn.classList.add('pressed');
+      setTimeout(() => btn.classList.remove('pressed'), 200);
+
+      const spellName = btn.getAttribute('data-spell');
+      const activeClient = clientsData.find(c => c.id === activeClientId) || { id: "GEN-00", name: "Protoss Flagship" };
+      const selCount = selectedUnitIds.length;
+      const targetText = (selCount > 1) ? `Taskforce of ${selCount} Units` : activeClient.name;
+
+      logTerminal(`[CMD ${key.toUpperCase()}] Initiating matrix: ${spellName} -> ${targetText}`, 'action');
+    }
+
+    // Keyboard Shortcuts: Abilities [Q,W,E,A,S,D,Z,X,C] & Control Groups [1-9]
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      const num = parseInt(e.key, 10);
+      if (!isNaN(num) && num >= 1 && num <= 9) {
+        if (e.shiftKey || e.ctrlKey) {
+          e.preventDefault();
+          bindControlGroup(num);
+        } else {
+          e.preventDefault();
+          recallControlGroup(num);
+        }
+        return;
+      }
+
+      const key = e.key.toUpperCase();
+      const validHotkeys = ['Q', 'W', 'E', 'A', 'S', 'D', 'Z', 'X', 'C'];
+      if (validHotkeys.includes(key) && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        triggerAbility(key);
+      }
+    });
+
+    // Window Init & Resize
+    window.addEventListener('load', () => {
+      renderDraggableUnits();
+      selectUnit("C-101");
+      // Pre-bind Group 1 with first client
+      controlGroups[1] = ["C-101"];
+      updateControlGroupPips();
+    });
+
+    window.addEventListener('resize', () => {
+      updateEnergyTethers();
+      updateMinimapBlips();
+    });
+  </script>
+</body></html>

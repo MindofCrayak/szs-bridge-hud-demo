@@ -1,0 +1,16 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+**/.clasp.json
+docs/private/
+local_data/
+apps/command-hud/local-data/*.csv
+docs/active/*.csv
+
+# Phase G4 browser test evidence (screenshots, results.json)
+apps/command-hud/e2e/results/

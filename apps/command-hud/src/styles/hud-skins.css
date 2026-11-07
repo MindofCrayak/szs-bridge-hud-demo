@@ -1,0 +1,113 @@
+/* ==========================================================================
+   AIRSHIP COMMAND HUD — 4-LAYER SKINNABLE CHASSIS ARCHITECTURE
+   Layer 0: Structural Chassis (Outer Hull, Base Geometry, Gradient Floor)
+   Layer 1: Faceplate Theme (Panels, Dividers, Card Backgrounds)
+   Layer 2: Telemetry & Modules (Active Indicators, Glows, Sensor readouts)
+   Layer 3: Filigree & Bezel (Metallic trims, Rivets, Corner brackets)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   SKIN 1: HERALDRY GOLD (Standard Airship Fleet Protocol)
+   -------------------------------------------------------------------------- */
+:root,
+:root[data-skin="heraldry-gold"] {
+  /* Layer 0: Structural Chassis */
+  --chassis-bg: #020500;
+  --chassis-gradient-from: #0d1f18;
+  --chassis-gradient-via: #05130e;
+  --chassis-gradient-to: #020500;
+  --chassis-shadow: 0 -4px 24px rgba(224, 202, 60, 0.12), 0 0 16px rgba(8, 99, 117, 0.25);
+  
+  /* Layer 1: Faceplate Theme */
+  --chassis-top-bezel: #e0ca3c;
+  --chassis-border: rgba(8, 99, 117, 0.7);
+  --faceplate-bg: rgba(95, 15, 64, 0.25);
+  --faceplate-header-from: rgba(13, 31, 24, 0.95);
+  --faceplate-header-to: rgba(5, 19, 14, 0.90);
+  --faceplate-card-bg: rgba(2, 5, 0, 0.85);
+  --faceplate-card-border: rgba(8, 99, 117, 0.45);
+  --faceplate-card-hover: rgba(95, 15, 64, 0.4);
+
+  /* Layer 2: Telemetry & Modules */
+  --telemetry-glow: rgba(224, 202, 60, 0.25);
+  --telemetry-accent: #086375;
+  --telemetry-highlight: #e0ca3c;
+  --telemetry-alert: #fe5f00;
+  --telemetry-mana: #ddfbd0;
+  --telemetry-badge-bg: rgba(224, 202, 60, 0.15);
+  --telemetry-badge-text: #e0ca3c;
+
+  /* Layer 3: Filigree & Bezel */
+  --chassis-bezel: #e0ca3c;
+  --chassis-filigree: rgba(224, 202, 60, 0.4);
+  --chassis-filigree-opacity: 0.35;
+  --corner-bracket: #e0ca3c;
+}
+
+/* --------------------------------------------------------------------------
+   SKIN 2: STEALTH OBSIDIAN (Blackout Tactical Operations Protocol)
+   -------------------------------------------------------------------------- */
+:root[data-skin="stealth-obsidian"] {
+  /* Layer 0: Structural Chassis */
+  --chassis-bg: #000000;
+  --chassis-gradient-from: #080d12;
+  --chassis-gradient-via: #03070a;
+  --chassis-gradient-to: #000204;
+  --chassis-shadow: 0 -4px 28px rgba(0, 229, 255, 0.1), 0 0 20px rgba(0, 0, 0, 0.95);
+
+  /* Layer 1: Faceplate Theme */
+  --chassis-top-bezel: #00e5ff;
+  --chassis-border: rgba(0, 229, 255, 0.5);
+  --faceplate-bg: rgba(10, 20, 28, 0.6);
+  --faceplate-header-from: rgba(8, 16, 24, 0.98);
+  --faceplate-header-to: rgba(2, 6, 10, 0.95);
+  --faceplate-card-bg: rgba(4, 8, 12, 0.9);
+  --faceplate-card-border: rgba(0, 229, 255, 0.3);
+  --faceplate-card-hover: rgba(0, 229, 255, 0.15);
+
+  /* Layer 2: Telemetry & Modules */
+  --telemetry-glow: rgba(0, 229, 255, 0.3);
+  --telemetry-accent: #00e5ff;
+  --telemetry-highlight: #00ffaa;
+  --telemetry-alert: #ff0055;
+  --telemetry-mana: #e0f7fa;
+  --telemetry-badge-bg: rgba(0, 229, 255, 0.15);
+  --telemetry-badge-text: #00e5ff;
+
+  /* Layer 3: Filigree & Bezel */
+  --chassis-bezel: #00e5ff;
+  --chassis-filigree: rgba(0, 229, 255, 0.5);
+  --chassis-filigree-opacity: 0.25;
+  --corner-bracket: #00e5ff;
+}
+
+/* Chassis Structural Utility Classes */
+.hud-chassis-shell {
+  background: linear-gradient(
+    to bottom,
+    var(--chassis-gradient-from),
+    var(--chassis-gradient-via),
+    var(--chassis-gradient-to)
+  );
+  border-top-color: var(--chassis-top-bezel);
+  box-shadow: var(--chassis-shadow);
+}
+
+.hud-faceplate-header {
+  background: linear-gradient(
+    to bottom,
+    var(--faceplate-header-from),
+    var(--faceplate-header-to)
+  );
+  border-bottom-color: var(--chassis-top-bezel);
+}
+
+.hud-panel-card {
+  background: var(--faceplate-card-bg);
+  border-color: var(--faceplate-card-border);
+}
+
+.hud-panel-card:hover {
+  background: var(--faceplate-card-hover);
+  border-color: var(--telemetry-accent);
+}

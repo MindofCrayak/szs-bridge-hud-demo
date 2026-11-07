@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mailchimp Clone - Web Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-amber-500 selection:text-slate-950" x-data="dashboardApp()" x-init="init()">
+
+  <!-- Top Navigation & System Status Header -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-bold shadow-md shadow-amber-500/20">
+            ✉
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-base text-white tracking-tight">Mailchimp Clone</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Self-Hosted GAS
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">Google Sheets DB • GmailApp Engine • Web App</p>
+          </div>
+        </div>
+
+        <!-- Telemetry & Kill Switch -->
+        <div class="flex items-center gap-3">
+          <!-- Quota Remaining -->
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="text-slate-400">Daily Quota:</span>
+            <span class="font-mono font-bold text-slate-200" x-text="quota.remaining + ' left'">Loading...</span>
+          </div>
+
+          <!-- GLOBAL_KILL_SWITCH Indicator & Toggle -->
+          <button
+            @click="toggleKillSwitch()"
+            :disabled="loading"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition border shadow-sm"
+            :class="killSwitchActive 
+              ? 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30' 
+              : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'"
+          >
+            <span class="w-2 h-2 rounded-full" :class="killSwitchActive ? 'bg-red-400' : 'bg-emerald-400'"></span>
+            <span x-text="killSwitchActive ? 'KILL SWITCH: ACTIVE' : 'OPERATIONAL'"></span>
+          </button>
+
+          <!-- Refresh Data -->
+          <button
+            @click="refreshAll()"
+            class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            title="Refresh from Google Sheets"
+          >
+            ↻
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <nav class="flex space-x-1 border-t border-slate-800/80 pt-1 pb-2">
+        <button
+          @click="activeTab = 'campaigns'"
+          class="px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition"
+          :class="activeTab === 'campaigns' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'"
+        >
+          Campaigns (<span x-text="campaigns.length"></span>)
+        </button>
+        <button
+          @click="activeTab = 'subscribers'"
+          class="px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition"
+          :class="activeTab === 'subscribers' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'"
+        >
+          Subscribers (<span x-text="subscribers.length"></span>)
+        </button>
+        <button
+          @click="activeTab = 'drips'"
+          class="px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition"
+          :class="activeTab === 'drips' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'"
+        >
+          Sequences &amp; Drips
+        </button>
+        <button
+          @click="activeTab = 'logs'"
+          class="px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition"
+          :class="activeTab === 'logs' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'"
+        >
+          Delivery Logs (<span x-text="logs.length"></span>)
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div x-show="banner.visible" x-cloak class="max-w-7xl mx-auto px-4 mt-4">
+    <div
+      class="p-4 rounded-xl border text-xs font-semibold flex items-center justify-between"
+      :class="banner.type === 'error' ? 'bg-red-500/15 border-red-500/30 text-red-300' : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'"
+    >
+      <span x-text="banner.message"></span>
+      <button @click="banner.visible = false" class="text-slate-400 hover:text-white font-bold ml-4">✕</button>
+    </div>
+  </div>
+
+  <!-- Main View Router -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ============================================================= -->
+    <!-- TAB 1: CAMPAIGNS -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'campaigns'" x-cloak class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white">Broadcast Campaigns</h2>
+          <p class="text-xs text-slate-400">Create, test, approve, and execute broadcast dispatches with timeout-safe resumption.</p>
+        </div>
+        <button
+          @click="showCreateModal = true"
+          class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition shadow-sm"
+        >
+          + Create Campaign
+        </button>
+      </div>
+
+      <!-- Campaigns Table -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[11px] font-mono">
+            <tr>
+              <th class="py-3 px-4">Campaign Name</th>
+              <th class="py-3 px-4">Newsletter ID</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4">Type</th>
+              <th class="py-3 px-4">A/B Testing</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            <template x-for="camp in campaigns" :key="camp.campaign_id">
+              <tr class="hover:bg-slate-800/30 transition text-slate-300">
+                <td class="py-3 px-4">
+                  <div class="font-bold text-white font-sans text-xs" x-text="camp.name"></div>
+                  <div class="text-[11px] text-slate-500" x-text="camp.campaign_id"></div>
+                  <span
+                    x-show="camp.source_id"
+                    class="inline-block mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    x-text="camp.content_type === 'GMAIL_DRAFT' ? 'Draft Linked' : 'Doc Linked'"
+                  ></span>
+                </td>
+                <td class="py-3 px-4" x-text="camp.newsletter_id"></td>
+                <td class="py-3 px-4">
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                    :class="{
+                      'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30': camp.status === 'COMPLETED' || camp.status === 'APPROVED',
+                      'bg-amber-500/15 text-amber-400 border border-amber-500/30': camp.status === 'SENDING' || camp.status === 'RESUMING',
+                      'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30': camp.status === 'TEST_SENT',
+                      'bg-slate-800 text-slate-400 border border-slate-700': camp.status === 'DRAFT'
+                    }"
+                    x-text="camp.status"
+                  ></span>
+                </td>
+                <td class="py-3 px-4 text-slate-400" x-text="camp.content_type || 'DOC_SHELL'"></td>
+                <td class="py-3 px-4">
+                  <span x-show="camp.subject_line_b" class="text-amber-400 font-semibold" x-text="'Split ' + (camp.test_split_ratio || 50) + '%' "></span>
+                  <span x-show="!camp.subject_line_b" class="text-slate-500">Standard</span>
+                </td>
+                <td class="py-3 px-4 text-right space-x-1.5 font-sans">
+                  <button
+                    @click="openContentModal(camp)"
+                    class="px-2.5 py-1 text-xs font-medium rounded border border-slate-600 hover:bg-slate-700 text-slate-200"
+                  >
+                    Edit Content
+                  </button>
+                  <!-- Send Test Email -->
+                  <button
+                    @click="promptTestEmail(camp.campaign_id)"
+                    class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px] border border-slate-700"
+                    title="Send preview to a test address"
+                  >
+                    Send Test
+                  </button>
+
+                  <!-- Approve & Dispatch -->
+                  <button
+                    @click="executeCampaign(camp.campaign_id)"
+                    class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded text-[11px]"
+                    title="Approve and execute batch delivery"
+                  >
+                    Approve &amp; Dispatch
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 2: SUBSCRIBERS -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'subscribers'" x-cloak class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white">Audience Subscribers</h2>
+          <p class="text-xs text-slate-400">Total contacts, subscription preferences, and delivery status badges.</p>
+        </div>
+        <button
+          @click="showAddSubModal = true"
+          class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition shadow-sm"
+        >
+          + Add Subscriber
+        </button>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[11px] font-mono">
+            <tr>
+              <th class="py-3 px-4">Contact</th>
+              <th class="py-3 px-4">Subscribed Newsletters</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4">Source</th>
+              <th class="py-3 px-4">Created At</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            <template x-for="sub in subscribers" :key="sub.subscriber_id">
+              <tr class="hover:bg-slate-800/30 transition text-slate-300">
+                <td class="py-3 px-4">
+                  <div class="font-bold text-white font-sans text-xs" x-text="(sub.first_name || '') + ' ' + (sub.last_name || '')"></div>
+                  <div class="text-[11px] text-slate-400" x-text="sub.email"></div>
+                </td>
+                <td class="py-3 px-4 text-amber-300" x-text="sub.subscribed_newsletters || 'None'"></td>
+                <td class="py-3 px-4">
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                    :class="{
+                      'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30': String(sub.status).toLowerCase() === 'active',
+                      'bg-red-500/15 text-red-400 border border-red-500/30': String(sub.status).toLowerCase() === 'bounced',
+                      'bg-slate-800 text-slate-400': String(sub.status).toLowerCase() === 'unsubscribed'
+                    }"
+                    x-text="sub.status"
+                  ></span>
+                </td>
+                <td class="py-3 px-4 text-slate-500" x-text="sub.source || 'web_api'"></td>
+                <td class="py-3 px-4 text-slate-500 text-[11px]" x-text="new Date(sub.created_at).toLocaleDateString()"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 3: DRIPS & SEQUENCES -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'drips'" x-cloak class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white">Automated Drip Sequences</h2>
+          <p class="text-xs text-slate-400">Step-by-step delay workflows evaluated automatically on an hourly cron trigger.</p>
+        </div>
+        <div class="flex gap-2">
+          <button
+            @click="runDripsNow()"
+            class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition"
+          >
+            ▶ Run Drip Trigger Now
+          </button>
+          <button
+            @click="installDripTrigger()"
+            class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition"
+          >
+            Install Hourly Trigger
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[11px] font-mono">
+            <tr>
+              <th class="py-3 px-4">Sequence ID</th>
+              <th class="py-3 px-4">Step #</th>
+              <th class="py-3 px-4">Step Name</th>
+              <th class="py-3 px-4">Delay (Days)</th>
+              <th class="py-3 px-4">Newsletter Target</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            <template x-for="step in dripSteps" :key="step.sequence_id + '_' + step.step_number">
+              <tr class="hover:bg-slate-800/30 transition text-slate-300">
+                <td class="py-3 px-4 font-bold text-white" x-text="step.sequence_id"></td>
+                <td class="py-3 px-4 text-cyan-400 font-bold" x-text="'Step ' + step.step_number"></td>
+                <td class="py-3 px-4 font-sans text-xs text-slate-200" x-text="step.name"></td>
+                <td class="py-3 px-4" x-text="step.delay_days + ' day(s)'"></td>
+                <td class="py-3 px-4 text-amber-300" x-text="step.newsletter_id"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 4: DELIVERY LOGS -->
+    <!-- ============================================================= -->
+    <div x-show="activeTab === 'logs'" x-cloak class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white">Delivery &amp; Audit Logs</h2>
+          <p class="text-xs text-slate-400">Live ledger records showing composite keys, open tracking events, and dispatch timestamps.</p>
+        </div>
+        <button
+          @click="loadLogs()"
+          class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg border border-slate-700"
+        >
+          Refresh Logs
+        </button>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase text-[11px]">
+            <tr>
+              <th class="py-3 px-4">Composite Key</th>
+              <th class="py-3 px-4">Recipient</th>
+              <th class="py-3 px-4">Variant</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60">
+            <template x-for="log in logs" :key="log.log_id_key">
+              <tr class="hover:bg-slate-800/30 transition text-slate-300">
+                <td class="py-3 px-4 font-bold text-amber-400/90" x-text="log.log_id_key"></td>
+                <td class="py-3 px-4 text-slate-200" x-text="log.email"></td>
+                <td class="py-3 px-4" x-text="log.variant_sent || 'A'"></td>
+                <td class="py-3 px-4">
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                    :class="{
+                      'bg-emerald-500/20 text-emerald-300': log.status === 'opened',
+                      'bg-sky-500/20 text-sky-300': log.status === 'sent' || log.status === 'delivered',
+                      'bg-red-500/20 text-red-300': log.status === 'failed' || log.status === 'bounced'
+                    }"
+                    x-text="log.status"
+                  ></span>
+                </td>
+                <td class="py-3 px-4 text-slate-500 text-[11px]" x-text="new Date(log.timestamp).toLocaleString()"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal: Create Campaign -->
+  <div x-show="showCreateModal" x-cloak class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <h3 class="text-base font-bold text-white">Create Broadcast Campaign</h3>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Campaign Name</label>
+          <input type="text" x-model="newCamp.name" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" placeholder="Issue #43" />
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Newsletter ID</label>
+          <input type="text" x-model="newCamp.newsletter_id" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" placeholder="news_tech_weekly" />
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Subject Line A (Primary)</label>
+          <input type="text" x-model="newCamp.subject_line_a" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" />
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Subject Line B (A/B Test Variant)</label>
+          <input type="text" x-model="newCamp.subject_line_b" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" placeholder="Optional" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button @click="showCreateModal = false" class="px-4 py-2 text-xs text-slate-400 hover:text-white">Cancel</button>
+        <button @click="createCampaign()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit / Link Campaign Content -->
+  <div x-show="showContentModal" x-cloak class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" @click.self="showContentModal = false">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5" role="dialog" aria-modal="true" aria-labelledby="content-modal-title">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 id="content-modal-title" class="text-base font-bold text-white">Edit / Link Content</h3>
+          <p class="mt-1 text-xs text-slate-400">Campaign: <span class="text-slate-200" x-text="contentCampaign ? contentCampaign.name : ''"></span></p>
+        </div>
+        <button @click="showContentModal = false" class="text-slate-400 hover:text-white" aria-label="Close">✕</button>
+      </div>
+
+      <div class="flex border-b border-slate-800">
+        <button
+          @click="contentTab = 'doc'"
+          class="px-3 py-2 text-xs font-semibold border-b-2"
+          :class="contentTab === 'doc' ? 'text-amber-300 border-amber-400' : 'text-slate-400 border-transparent hover:text-white'"
+        >
+          Google Doc (Master Shell)
+        </button>
+        <button
+          @click="contentTab = 'draft'; loadGmailDrafts()"
+          class="px-3 py-2 text-xs font-semibold border-b-2"
+          :class="contentTab === 'draft' ? 'text-amber-300 border-amber-400' : 'text-slate-400 border-transparent hover:text-white'"
+        >
+          Gmail Draft
+        </button>
+      </div>
+
+      <div x-show="contentTab === 'doc'" class="space-y-4">
+        <p class="text-xs text-slate-400">Create a new body document or attach an existing Google Doc by URL or file ID.</p>
+        <button
+          @click="createCampaignDoc()"
+          :disabled="savingContent"
+          class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold rounded-lg"
+        >
+          <span x-show="savingContent" class="w-3.5 h-3.5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin"></span>
+          <span x-text="savingContent ? 'Creating document...' : '+ Create New Google Doc'"></span>
+        </button>
+        <div class="space-y-2">
+          <label for="existing-doc-id" class="block text-xs text-slate-400">Or paste existing Google Doc URL / ID</label>
+          <input id="existing-doc-id" type="text" x-model="contentDocInput" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-white placeholder:text-slate-600" placeholder="https://docs.google.com/document/d/..." />
+          <button
+            @click="attachExistingDoc()"
+            :disabled="savingContent || !contentDocInput.trim()"
+            class="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold rounded border border-slate-700"
+          >
+            Attach Doc
+          </button>
+        </div>
+      </div>
+
+      <div x-show="contentTab === 'draft'" class="space-y-4">
+        <p class="text-xs text-slate-400">Choose one of your Gmail drafts to use as this campaign's content.</p>
+        <div>
+          <label for="campaign-gmail-draft" class="block text-xs text-slate-400 mb-1">Gmail Draft</label>
+          <div class="flex items-center gap-2">
+            <select id="campaign-gmail-draft" x-model="selectedDraftId" :disabled="loadingDrafts || savingContent" class="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-white disabled:opacity-50">
+              <option value="" x-text="loadingDrafts ? 'Loading drafts...' : 'Select a draft'"></option>
+              <template x-for="draft in gmailDrafts" :key="draft.id">
+                <option :value="draft.id" x-text="draft.subject"></option>
+              </template>
+            </select>
+            <button @click="loadGmailDrafts(true)" :disabled="loadingDrafts" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 text-xs rounded border border-slate-700" title="Refresh drafts">
+              <span x-show="loadingDrafts" class="inline-block w-3 h-3 border-2 border-slate-500 border-t-amber-400 rounded-full animate-spin"></span>
+              <span x-show="!loadingDrafts">↻</span>
+            </button>
+          </div>
+          <p x-show="!loadingDrafts && gmailDrafts.length === 0" class="mt-2 text-[11px] text-slate-500">No Gmail drafts were found.</p>
+        </div>
+        <button
+          @click="attachSelectedDraft()"
+          :disabled="savingContent || loadingDrafts || !selectedDraftId"
+          class="px-3 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-bold rounded-lg"
+        >
+          <span x-show="savingContent" class="inline-block w-3 h-3 mr-1 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin align-[-2px]"></span>
+          Attach Draft
+        </button>
+      </div>
+
+      <div class="flex justify-end pt-1">
+        <button @click="showContentModal = false" class="px-4 py-2 text-xs text-slate-400 hover:text-white">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Subscriber -->
+  <div x-show="showAddSubModal" x-cloak class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <h3 class="text-base font-bold text-white">Add or Update Subscriber</h3>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Email Address</label>
+          <input type="email" x-model="newSub.email" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-400 mb-1">First Name</label>
+            <input type="text" x-model="newSub.first_name" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Last Name</label>
+            <input type="text" x-model="newSub.last_name" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Subscribed Newsletters (comma separated)</label>
+          <input type="text" x-model="newSub.subscribed_newsletters" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" placeholder="news_tech_weekly, news_product_updates" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button @click="showAddSubModal = false" class="px-4 py-2 text-xs text-slate-400 hover:text-white">Cancel</button>
+        <button @click="addSubscriber()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function dashboardApp() {
+      return {
+        activeTab: 'campaigns',
+        loading: false,
+        killSwitchActive: false,
+        quota: { remaining: 1450, buffer: 100 },
+        campaigns: [],
+        subscribers: [],
+        dripSteps: [],
+        logs: [],
+        banner: { visible: false, message: '', type: 'success' },
+        showCreateModal: false,
+        showContentModal: false,
+        showAddSubModal: false,
+        contentCampaign: null,
+        contentTab: 'doc',
+        contentDocInput: '',
+        gmailDrafts: [],
+        selectedDraftId: '',
+        loadingDrafts: false,
+        draftsLoaded: false,
+        savingContent: false,
+        newCamp: { name: '', newsletter_id: 'news_tech_weekly', subject_line_a: '', subject_line_b: '', test_split_ratio: 50 },
+        newSub: { email: '', first_name: '', last_name: '', subscribed_newsletters: 'news_tech_weekly' },
+
+        init() {
+          this.refreshAll();
+        },
+
+        showBanner(msg, type) {
+          this.banner.message = msg;
+          this.banner.type = type || 'success';
+          this.banner.visible = true;
+          setTimeout(() => { this.banner.visible = false; }, 6000);
+        },
+
+        openContentModal(campaign) {
+          this.contentCampaign = campaign;
+          this.contentTab = 'doc';
+          this.contentDocInput = '';
+          this.selectedDraftId = '';
+          this.showContentModal = true;
+          this.loadGmailDrafts(true);
+        },
+
+        loadGmailDrafts(force) {
+          if (this.loadingDrafts || (this.draftsLoaded && !force)) return;
+          if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            this.gmailDrafts = [];
+            this.draftsLoaded = true;
+            return;
+          }
+
+          this.loadingDrafts = true;
+          google.script.run
+            .withSuccessHandler((drafts) => {
+              this.gmailDrafts = drafts;
+              this.draftsLoaded = true;
+              this.loadingDrafts = false;
+            })
+            .withFailureHandler((err) => {
+              this.loadingDrafts = false;
+              this.showBanner(err.message, 'error');
+            })
+            .getGmailDraftsList();
+        },
+
+        createCampaignDoc() {
+          if (!this.contentCampaign || this.savingContent) return;
+          if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            this.showBanner('Creating a Google Doc requires the deployed Apps Script dashboard.', 'error');
+            return;
+          }
+
+          const docWindow = window.open('', '_blank');
+          this.savingContent = true;
+          google.script.run
+            .withSuccessHandler((result) => {
+              this.savingContent = false;
+              if (!result || !result.success || !result.docUrl) {
+                if (docWindow) docWindow.close();
+                this.showBanner('The Google Doc was created, but its link could not be returned.', 'error');
+                return;
+              }
+              if (docWindow) {
+                docWindow.location = result.docUrl;
+              } else {
+                this.showBanner('Doc created, but the new tab was blocked. Open: ' + result.docUrl, 'error');
+              }
+              this.showContentModal = false;
+              this.showBanner('Google Doc linked to campaign.');
+              this.loadCampaigns();
+            })
+            .withFailureHandler((err) => {
+              this.savingContent = false;
+              if (docWindow) docWindow.close();
+              this.showBanner(err.message, 'error');
+            })
+            .createCampaignGoogleDoc(this.contentCampaign.campaign_id, this.contentCampaign.name);
+        },
+
+        attachExistingDoc() {
+          if (!this.contentDocInput.trim()) {
+            this.showBanner('Enter a Google Doc URL or file ID.', 'error');
+            return;
+          }
+          this.attachCampaignContent('DOC_SHELL', this.contentDocInput.trim());
+        },
+
+        attachSelectedDraft() {
+          if (!this.selectedDraftId) {
+            this.showBanner('Select a Gmail draft to attach.', 'error');
+            return;
+          }
+          this.attachCampaignContent('GMAIL_DRAFT', this.selectedDraftId);
+        },
+
+        attachCampaignContent(contentType, sourceId) {
+          if (!this.contentCampaign || this.savingContent) return;
+          if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            this.showBanner('Linking campaign content requires the deployed Apps Script dashboard.', 'error');
+            return;
+          }
+
+          this.savingContent = true;
+          google.script.run
+            .withSuccessHandler((result) => {
+              this.savingContent = false;
+              if (!result || !result.success) {
+                this.showBanner('Campaign content could not be linked.', 'error');
+                return;
+              }
+              this.showContentModal = false;
+              this.showBanner(contentType === 'GMAIL_DRAFT' ? 'Gmail draft linked to campaign.' : 'Google Doc linked to campaign.');
+              this.loadCampaigns();
+            })
+            .withFailureHandler((err) => {
+              this.savingContent = false;
+              this.showBanner(err.message, 'error');
+            })
+            .linkExistingContent(this.contentCampaign.campaign_id, contentType, sourceId);
+        },
+
+        refreshAll() {
+          this.loadSettings();
+          this.loadCampaigns();
+          this.loadSubscribers();
+          this.loadDrips();
+          this.loadLogs();
+        },
+
+        loadSettings() {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((settings) => {
+                this.killSwitchActive = (settings.GLOBAL_KILL_SWITCH === true || settings.GLOBAL_KILL_SWITCH === 'true');
+              })
+              .rpcGetSystemSettings();
+
+            google.script.run
+              .withSuccessHandler((q) => { this.quota = q; })
+              .rpcCheckQuota();
+          } else {
+            // Standalone preview defaults
+            this.killSwitchActive = false;
+            this.quota = { remaining: 1450, buffer: 100 };
+          }
+        },
+
+        toggleKillSwitch() {
+          const nextState = !this.killSwitchActive;
+          this.loading = true;
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                this.killSwitchActive = res;
+                this.loading = false;
+                this.showBanner(res ? 'GLOBAL KILL SWITCH ACTIVATED: All email operations halted.' : 'Operational: Email dispatch permitted.');
+              })
+              .withFailureHandler((err) => {
+                this.loading = false;
+                this.showBanner(err.message, 'error');
+              })
+              .rpcSetKillSwitch(nextState);
+          } else {
+            this.killSwitchActive = nextState;
+            this.loading = false;
+            this.showBanner(nextState ? 'Kill switch enabled (preview)' : 'Operational (preview)');
+          }
+        },
+
+        loadCampaigns() {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((rows) => { this.campaigns = rows; })
+              .rpcGetRows('Campaigns');
+          } else {
+            this.campaigns = [
+              { campaign_id: 'camp_v2_launch', name: 'Release 2.4 Bulletin', newsletter_id: 'news_tech_weekly', status: 'APPROVED', content_type: 'DOC_SHELL', subject_line_a: 'Version 2.4 is Live!', subject_line_b: 'What is new in 2.4', test_split_ratio: 50 },
+              { campaign_id: 'camp_oct20_arch', name: 'Architecture Deep Dive', newsletter_id: 'news_tech_weekly', status: 'COMPLETED', content_type: 'HTML', subject_line_a: 'Scaling Google Sheets', subject_line_b: '', test_split_ratio: 50 }
+            ];
+          }
+        },
+
+        loadSubscribers() {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((rows) => { this.subscribers = rows; })
+              .rpcGetRows('Subscribers');
+          } else {
+            this.subscribers = [
+              { subscriber_id: 'sub_1', email: 'alex.rivera@sessionzero.solutions', first_name: 'Alex', last_name: 'Rivera', subscribed_newsletters: 'news_tech_weekly', status: 'active', source: 'web_api', created_at: '2026-10-15' },
+              { subscriber_id: 'sub_2', email: 'sarah.connor@cyberdyne.org', first_name: 'Sarah', last_name: 'Connor', subscribed_newsletters: 'news_tech_weekly', status: 'active', source: 'import', created_at: '2026-10-16' }
+            ];
+          }
+        },
+
+        loadDrips() {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((rows) => { this.dripSteps = rows; })
+              .rpcGetRows('Drip_Sequences');
+          } else {
+            this.dripSteps = [
+              { sequence_id: 'drip_onboarding', newsletter_id: 'news_tech_weekly', name: 'Welcome & System Overview', step_number: 1, delay_days: 0 },
+              { sequence_id: 'drip_onboarding', newsletter_id: 'news_tech_weekly', name: 'Advanced Automation Guide', step_number: 2, delay_days: 3 }
+            ];
+          }
+        },
+
+        loadLogs() {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((rows) => { this.logs = rows.reverse(); })
+              .rpcGetRows('Delivery_Logs');
+          } else {
+            this.logs = [
+              { log_id_key: 'alex.rivera@sessionzero.solutions_camp_oct20_arch_0', email: 'alex.rivera@sessionzero.solutions', variant_sent: 'A', status: 'opened', timestamp: new Date().toISOString() }
+            ];
+          }
+        },
+
+        promptTestEmail(campId) {
+          const testEmail = prompt('Enter recipient address for pre-flight [TEST] email:', 'qa@sessionzero.solutions');
+          if (!testEmail) return;
+
+          this.showBanner('Dispatching pre-flight test email...');
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                this.showBanner('Test email dispatched to ' + res.test_email + '. Status updated to TEST_SENT.');
+                this.loadCampaigns();
+              })
+              .withFailureHandler((err) => { this.showBanner(err.message, 'error'); })
+              .rpcSendTestEmail(campId, testEmail);
+          } else {
+            this.showBanner('Preview mode: Test email simulated for ' + testEmail);
+          }
+        },
+
+        executeCampaign(campId) {
+          if (!confirm('Are you sure you want to approve and execute batch delivery for campaign ' + campId + '?')) {
+            return;
+          }
+          this.showBanner('Starting batch delivery...');
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                this.showBanner('Execution status: ' + (res.status || 'Done') + '. Dispatched: ' + (res.sent_count || 0));
+                this.loadCampaigns();
+                this.loadLogs();
+              })
+              .withFailureHandler((err) => { this.showBanner(err.message, 'error'); })
+              .rpcExecuteCampaign(campId);
+          } else {
+            this.showBanner('Preview mode: Dispatch triggered for ' + campId);
+          }
+        },
+
+        createCampaign() {
+          if (!this.newCamp.name || !this.newCamp.newsletter_id) {
+            alert('Name and Newsletter ID are required.');
+            return;
+          }
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(() => {
+                this.showCreateModal = false;
+                this.showBanner('Campaign created successfully.');
+                this.loadCampaigns();
+              })
+              .withFailureHandler((err) => { alert(err.message); })
+              .rpcCreateCampaign(this.newCamp);
+          } else {
+            this.campaigns.push({ ...this.newCamp, campaign_id: 'camp_' + Date.now(), status: 'DRAFT' });
+            this.showCreateModal = false;
+            this.showBanner('Campaign created (preview)');
+          }
+        },
+
+        addSubscriber() {
+          if (!this.newSub.email) {
+            alert('Email is required.');
+            return;
+          }
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler(() => {
+                this.showAddSubModal = false;
+                this.showBanner('Subscriber saved successfully.');
+                this.loadSubscribers();
+              })
+              .withFailureHandler((err) => { alert(err.message); })
+              .rpcAddOrUpdateSubscriber(this.newSub);
+          } else {
+            this.subscribers.push({ ...this.newSub, subscriber_id: 'sub_' + Date.now(), status: 'active', created_at: new Date().toISOString() });
+            this.showAddSubModal = false;
+            this.showBanner('Subscriber added (preview)');
+          }
+        },
+
+        runDripsNow() {
+          this.showBanner('Evaluating drip sequence eligibility...');
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((res) => {
+                this.showBanner('Drip engine ran. Dispatched: ' + (res.dispatched || 0) + ' step messages.');
+                this.loadLogs();
+              })
+              .withFailureHandler((err) => { this.showBanner(err.message, 'error'); })
+              .rpcRunDripSequences();
+          } else {
+            this.showBanner('Preview mode: Drip evaluation simulated.');
+          }
+        },
+
+        installDripTrigger() {
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+              .withSuccessHandler((res) => { this.showBanner(res.message); })
+              .withFailureHandler((err) => { this.showBanner(err.message, 'error'); })
+              .rpcInstallDripTrigger();
+          } else {
+            this.showBanner('Trigger install simulated.');
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>

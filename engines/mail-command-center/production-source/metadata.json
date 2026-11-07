@@ -1,0 +1,6 @@
+{
+  "name": "GAS Mailchimp Clone - Architecture & Script Engine",
+  "description": "Production Google Apps Script engine for self-hosted email marketing with Google Sheets DB, GmailApp sender, double-send prevention, and open tracking pixel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

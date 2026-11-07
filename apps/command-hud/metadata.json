@@ -1,0 +1,6 @@
+{
+  "name": "Session Zero Solutions Command HUD",
+  "description": "A practical Google Workspace CRM dashboard for Session Zero Solutions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

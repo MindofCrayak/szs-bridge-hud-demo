@@ -1,0 +1,24 @@
+/**
+ * @license
+ * Session Zero Solutions // SZS Command HUD 2.0 Design Tokens
+ */
+
+:root {
+  /* Core Palette Tokens */
+  --szs-obsidian: #020500;
+  --szs-mana: #ddfbd0;
+  --szs-radar-teal: #086375;
+  --szs-plasma-orange: #fe5f00;
+  --szs-heraldry-gold: #e0ca3c;
+  --szs-plum: #5f0f40;
+
+  /* Chassis Dimensions & Ratios */
+  --chassis-scale: 1.0;
+  --bay-calendar-ratio: 280px;
+  --bay-dossier-ratio: 270px;
+  --bay-macro-ratio: 280px;
+  --chassis-bg: #020500;
+  --chassis-border: #086375;
+  --chassis-bezel: #e0ca3c;
+  --panel-surface: rgba(8, 99, 117, 0.08);
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Commercial Mail Command Center (MCC) Deliverable",
+  "version": "2.0.0",
+  "sanitization_status": "CLEAN",
+  "internal_data_stripped": [
+    "Alfred internal hooks",
+    "Oracle MMD proprietary scrapers",
+    "Internal project IDs and GCP secrets",
+    "SZS proprietary client fleet telemetry"
+  ],
+  "client_customization_fields": {
+    "organization_name": "{{CLIENT_ORG_NAME}}",
+    "newsletter_name": "{{CLIENT_NEWSLETTER_NAME}}",
+    "support_email": "{{CLIENT_SUPPORT_EMAIL}}",
+    "brand_color_primary": "#0D9488",
+    "brand_color_accent": "#F59E0B",
+    "sender_display_name": "{{CLIENT_SENDER_NAME}}",
+    "sender_email": "{{CLIENT_SENDER_EMAIL}}"
+  },
+  "deployment_pipeline": {
+    "target_platform": "Google Apps Script / Web App",
+    "required_google_services": [
+      "GmailApp",
+      "SpreadsheetApp",
+      "DriveApp"
+    ],
+    "verification_checklist": [
+      "Replace {{newsletter_name}} merge tokens with client publication title",
+      "Attach client Google Sheet ID for subscriber database",
+      "Deploy web app with access: 'Anyone within organization' or 'Anyone'",
+      "Run initial test campaign to verified internal test inbox"
+    ]
+  }
+}

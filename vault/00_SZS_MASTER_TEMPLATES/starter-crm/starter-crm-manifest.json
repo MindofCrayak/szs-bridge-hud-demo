@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Starter CRM & Master Control Deliverable",
+  "version": "2.0.0",
+  "sanitization_status": "CLEAN",
+  "internal_data_stripped": [
+    "SZS proprietary partner rosters",
+    "Alfred internal bridge tokens",
+    "Production internal webhooks"
+  ],
+  "sheet_architecture": [
+    {
+      "sheet_name": "Clients",
+      "columns": ["ClientID", "Company_Name", "PrimaryContact", "Email", "Status", "PipelineStage", "ContractValue", "DriveFolderUrl"]
+    },
+    {
+      "sheet_name": "Projects",
+      "columns": ["ProjectID", "ClientID", "ProjectName", "KanbanStage", "StartDate", "TargetDelivery", "Status"]
+    },
+    {
+      "sheet_name": "Finances",
+      "columns": ["InvoiceID", "ClientID", "Milestone", "Amount", "DepositPaid", "PaidDate", "BalanceDue"]
+    },
+    {
+      "sheet_name": "Stage_History",
+      "columns": ["Timestamp", "ClientID", "PreviousStage", "NewStage", "Actor", "GatePassed"]
+    }
+  ],
+  "client_deployment_steps": [
+    "Run SZS_Database_Generator on target client workspace Google Sheet",
+    "Bind Central_Router webhooks to client frontend form or CRM ingestion point",
+    "Verify DepositPaid phase-gate rule prior to project kickoff"
+  ]
+}

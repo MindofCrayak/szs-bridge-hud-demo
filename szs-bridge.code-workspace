@@ -1,0 +1,33 @@
+{
+  "folders": [
+    {
+      "name": "01: React Command HUD",
+      "path": "apps/command-hud"
+    },
+    {
+      "name": "02: Master Control Backend",
+      "path": "engines/master-control"
+    },
+    {
+      "name": "03: Mail Command Center",
+      "path": "engines/mail-command-center"
+    },
+    {
+      "name": "04: Oracle MMD (Quarantined)",
+      "path": "quarantine/oracle-mmd"
+    },
+    {
+      "name": "00: Root Directives & Vault",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true,
+      "**/node_modules": true,
+      "**/dist": true
+    },
+    "editor.tabSize": 2
+  }
+}

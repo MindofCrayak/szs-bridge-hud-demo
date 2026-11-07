@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/hud-skins.css";
+
+@theme {
+  /* HUD readable type scale (owner feedback 2026-11-05: nothing under 11px). Tune here; classes text-hud-1..5. */
+  /* --ui-scale = MENU > HUD size (100-125%, owner 2026-11-06); it also scales rem sizes via html font-size. */
+  --text-hud-1: calc(11px * var(--ui-scale, 1));
+  --text-hud-2: calc(11.5px * var(--ui-scale, 1));
+  --text-hud-3: calc(12px * var(--ui-scale, 1));
+  --text-hud-4: calc(12.5px * var(--ui-scale, 1));
+  --text-hud-5: calc(13px * var(--ui-scale, 1));
+  --color-bg-obsidian: #020500;
+  --color-text-mana: #ddfbd0;
+  --color-primary-plum: #5f0f40;
+  --color-panel-plum: #5f0f40;
+  --color-accent-teal: #086375;
+  --color-alert-orange: #fe5f00;
+  --color-highlight-gold: #e0ca3c;
+  --color-bg-plum: #5f0f40;
+  --color-border-radar: #086375;
+  --color-text-plasma: #fe5f00;
+  --color-bg-plasma: #fe5f00;
+  --color-text-gold: #e0ca3c;
+  --color-bg-gold: #e0ca3c;
+  --color-plum: #5f0f40;
+  --color-radar: #086375;
+  --color-plasma: #fe5f00;
+  --color-gold: #e0ca3c;
+  --font-display: "Montserrat Alternates", sans-serif;
+  --font-body: "Jacques Francois", serif;
+  --font-accent: "Odibee Sans", sans-serif;
+  --font-serif-display: "Grenze Gotisch", serif;
+}
+
+:root {
+  --bg-obsidian: #020500;
+  --text-mana: #ddfbd0;
+  --primary-plum: #5f0f40;
+  --panel-plum: #5f0f40;
+  --accent-teal: #086375;
+  --alert-orange: #fe5f00;
+  --highlight-gold: #e0ca3c;
+  --bg-plum: #5f0f40;
+  --border-radar: #086375;
+  --text-plasma: #fe5f00;
+  --bg-plasma: #fe5f00;
+  --text-gold: #e0ca3c;
+  --bg-gold: #e0ca3c;
+  --plum: #5f0f40;
+  --radar: #086375;
+  --plasma: #fe5f00;
+  --gold: #e0ca3c;
+  color-scheme: dark;
+  font-family: "Jacques Francois", serif;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-obsidian);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-teal);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--alert-orange);
+}
+
+.crm-grid {
+  background-image:
+    radial-gradient(circle at 12% 18%, rgb(255 248 214 / 35%) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 73% 64%, rgb(255 248 214 / 25%) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 43% 87%, rgb(255 248 214 / 20%) 0 1px, transparent 1.5px),
+    linear-gradient(to right, rgb(8 99 117 / 10%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(8 99 117 / 10%) 1px, transparent 1px);
+  background-size: 173px 149px, 211px 193px, 257px 227px, 60px 60px, 60px 60px;
+  pointer-events: none;
+}
+
+.crt-scanlines {
+  opacity: 0.1;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    rgb(2 5 0 / 38%) 4px
+  );
+  mix-blend-mode: screen;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 1.5s infinite;
+}
+
+html { font-size: calc(16px * var(--ui-scale, 1)); }
+/* Room under full-screen views for the bottom dock (bay headers + power crystal). */
+:root { --dock-clearance: calc(150px * var(--ui-scale, 1) * var(--dock-scale, 1)); }
